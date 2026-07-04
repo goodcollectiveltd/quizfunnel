@@ -147,7 +147,7 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
               src={VET_IMG}
               alt="Kishan, veterinary surgeon, with Good for Pets products"
               loading="lazy"
-              className="h-40 w-40 shrink-0 rounded-2xl object-cover"
+              className="w-44 shrink-0 rounded-2xl sm:w-48"
             />
             <div className="text-center sm:text-left">
               <h2 className="text-xl font-extrabold text-brand-ink">Made properly — here in the UK</h2>
