@@ -10,6 +10,7 @@ import { testimonialsFor } from "@/data/testimonials";
 
 export function SymptomLander({ symptom }: { symptom: Symptom }) {
   const product = PRODUCTS[symptom.recommend];
+  const upsell = symptom.skinUpsell ? PRODUCTS.skinGutDuo : null;
   const proof = testimonialsFor(symptom.id);
   const cta = (label: string) => (
     <Button href={product.pdpUrl} className="w-full max-w-sm">
@@ -129,6 +130,25 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
               </p>
             </div>
           </div>
+
+          {/* Add-on upsell — extra skin & coat support */}
+          {upsell && (
+            <div className="mx-auto mt-6 max-w-md rounded-2xl border-2 border-dashed border-brand-red/40 p-5">
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-red">
+                Want to go further?
+              </p>
+              <h3 className="mt-1 text-lg font-extrabold text-brand-ink">{upsell.addOnLabel}</h3>
+              <p className="mt-1 text-sm text-brand-ink/70">{upsell.addOnBlurb}</p>
+              <a
+                href={upsell.pdpUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4"
+              >
+                {upsell.addOnLabel} →
+              </a>
+            </div>
+          )}
         </div>
       </section>
 

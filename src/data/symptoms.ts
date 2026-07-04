@@ -18,7 +18,8 @@ export interface Symptom {
   headline: string; // lander H1 — benefit-led
   subhead: string; // supporting promise
   agitate: string; // the pain, in the owner's world
-  recommend: ProductKey; // default product for this primary symptom
+  recommend: ProductKey; // hero product for this symptom — always Probio+
+  skinUpsell: boolean; // offer the Omega / Skin & Gut Duo add-on
 }
 
 export const SYMPTOMS: Symptom[] = [
@@ -35,6 +36,7 @@ export const SYMPTOMS: Symptom[] = [
     agitate:
       "You've cleaned his paws, changed his food, maybe been to the vet — and he's still at it. The licking isn't a habit. It's usually the skin flaring from the inside out.",
     recommend: "probioPlus",
+    skinUpsell: true,
   },
   {
     id: "itchy-skin",
@@ -48,7 +50,8 @@ export const SYMPTOMS: Symptom[] = [
       "When the scratching won't stop, the answer often isn't another lotion — it's calming the gut that's driving the flare. Feed the skin from the inside.",
     agitate:
       "You've watched him scratch himself raw. You've tried the sprays, the shampoos, maybe steroids or Apoquel. It quietens down, then it's back. The relief never lasts.",
-    recommend: "skinGutDuo",
+    recommend: "probioPlus",
+    skinUpsell: true,
   },
   {
     id: "gunky-ears",
@@ -63,6 +66,7 @@ export const SYMPTOMS: Symptom[] = [
     agitate:
       "You clean them and days later they're gunky and smelly again. More drops, more vet trips, and the head-shaking never really stops. It's exhausting — for both of you.",
     recommend: "probioPlus",
+    skinUpsell: false,
   },
   {
     id: "tummy",
@@ -77,6 +81,7 @@ export const SYMPTOMS: Symptom[] = [
     agitate:
       "The sloppy poos, the rumbling tummy, the wind. You're second-guessing every meal and never quite sure what's setting him off.",
     recommend: "probioPlus",
+    skinUpsell: false,
   },
   {
     id: "scooting",
@@ -91,6 +96,7 @@ export const SYMPTOMS: Symptom[] = [
     agitate:
       "The scoot across the carpet, the repeat trips to have his glands emptied. It's the kind of thing that never fully goes away — until the gut and the stools are right.",
     recommend: "probioPlus",
+    skinUpsell: false,
   },
   {
     id: "tear-staining",
@@ -105,6 +111,7 @@ export const SYMPTOMS: Symptom[] = [
     agitate:
       "The rusty stains under his eyes that no amount of wiping shifts. It's not just cosmetic — it's usually one more sign the system's out of balance.",
     recommend: "probioPlus",
+    skinUpsell: false,
   },
 ];
 

@@ -1,6 +1,6 @@
 import type { SymptomTag, Testimonial } from "@/data/testimonials";
 import { TESTIMONIALS } from "@/data/testimonials";
-import { PRODUCTS, type Product, type ProductKey } from "@/data/products";
+import { PRODUCTS, type Product } from "@/data/products";
 import { SYMPTOMS, symptomById, type Symptom } from "@/data/symptoms";
 
 export type DogSize = "toy" | "small" | "medium" | "large";
@@ -30,24 +30,24 @@ export const SIZE_LABEL: Record<DogSize, string> = {
 
 export interface Recommendation {
   primary: Symptom;
-  product: Product;
+  hero: Product; // always Probio+ — the foundation for the whole cluster
+  upsell: Product | null; // Skin & Gut Duo add-on when there's a skin/coat signal
   landerSlug: string;
   proof: Testimonial[]; // matched, de-duped, best first
   smallDog: boolean; // surface the sprinkle-capsule reassurance
   triedBefore: boolean;
 }
 
+const SKIN_SYMPTOMS: SymptomTag[] = ["itchy-skin", "paw-licking"];
+
 /**
- * Choose the product. Every symptom in this cluster points at the hero Probio+
- * (the cold-press mechanism that settles the whole skin–gut–ear loop). We upgrade
- * to the Skin & Gut Duo only when there's a genuine skin/coat signal — itchy skin
- * as the biggest issue, or itchy skin + paw licking selected together.
+ * Probio+ is the hero for every symptom in this cluster (the cold-press mechanism
+ * settles the whole skin–gut–ear loop). When there's a genuine skin/coat signal —
+ * itchy skin or paw licking anywhere in the answers — we offer the Skin & Gut Duo
+ * (adds Omega 3-6-9) as an optional "add extra support" upsell on top.
  */
-export function chooseProduct(a: QuizAnswers): ProductKey {
-  const has = (s: SymptomTag) => a.symptoms.includes(s);
-  const skinSignal =
-    a.primary === "itchy-skin" || (has("itchy-skin") && has("paw-licking"));
-  return skinSignal ? "skinGutDuo" : "probioPlus";
+export function hasSkinSignal(a: QuizAnswers): boolean {
+  return a.symptoms.some((s) => SKIN_SYMPTOMS.includes(s));
 }
 
 /** Rank matched testimonials: primary-symptom proof first, then secondary, de-duped. */
@@ -71,10 +71,10 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
   const primaryId: SymptomTag =
     a.primary ?? a.symptoms[0] ?? "paw-licking";
   const primary = symptomById(primaryId);
-  const product = PRODUCTS[chooseProduct(a)];
   return {
     primary,
-    product,
+    hero: PRODUCTS.probioPlus,
+    upsell: hasSkinSignal(a) ? PRODUCTS.skinGutDuo : null,
     landerSlug: primary.slug,
     proof: matchedProof(a, primaryId).slice(0, 6),
     smallDog: a.size === "toy" || a.size === "small",

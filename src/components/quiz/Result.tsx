@@ -58,10 +58,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             Our recommendation for {dog}
           </div>
           <div className="p-6">
-            <h2 className="text-2xl font-extrabold text-brand-ink">{rec.product.name}</h2>
-            <p className="mt-1 font-semibold text-brand-red">{rec.product.tagline}</p>
+            <h2 className="text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
+            <p className="mt-1 font-semibold text-brand-red">{rec.hero.tagline}</p>
             <ul className="mt-4 space-y-2">
-              {rec.product.contents.map((c) => (
+              {rec.hero.contents.map((c) => (
                 <li key={c} className="flex gap-2 text-[15px] text-brand-ink/80">
                   <span className="text-brand-red">✓</span>
                   {c}
@@ -87,6 +87,30 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             </p>
           </div>
         </div>
+
+        {/* Optional add-on upsell — only when there's a skin/coat signal */}
+        {rec.upsell && (
+          <div className="mt-4 rounded-3xl border-2 border-dashed border-brand-red/40 bg-white/60 p-5">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">➕</span>
+              <div className="flex-1">
+                <p className="text-xs font-bold uppercase tracking-wide text-brand-red">
+                  Add extra support for {dog}
+                </p>
+                <h3 className="mt-1 text-lg font-extrabold text-brand-ink">{rec.upsell.addOnLabel}</h3>
+                <p className="mt-1 text-sm text-brand-ink/70">{rec.upsell.addOnBlurb}</p>
+                <a
+                  href={rec.upsell.pdpUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4"
+                >
+                  {rec.upsell.addOnLabel} →
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Matched proof */}
         {rec.proof.length > 0 && (
