@@ -20,6 +20,11 @@ export interface Symptom {
   agitate: string; // the pain, in the owner's world
   recommend: ProductKey; // hero product for this symptom — always Probio+
   skinUpsell: boolean; // offer the Omega / Skin & Gut Duo add-on
+  // 3:2 photo for the "Sound familiar?" section. Optional: scooting & tear-staining
+  // have no usable stock, so those landers stay text-only there.
+  image?: string;
+  // Real customer before/after (ears only) — a dedicated proof block.
+  beforeAfter?: { image: string; caption: string };
 }
 
 export const SYMPTOMS: Symptom[] = [
@@ -37,6 +42,7 @@ export const SYMPTOMS: Symptom[] = [
       "You've cleaned his paws, changed his food, maybe been to the vet — and he's still at it. The licking isn't a habit. It's usually the skin flaring from the inside out.",
     recommend: "probioPlus",
     skinUpsell: true,
+    image: "/images/symptoms/paw-licking.jpg",
   },
   {
     id: "itchy-skin",
@@ -52,6 +58,7 @@ export const SYMPTOMS: Symptom[] = [
       "You've watched him scratch himself raw. You've tried the sprays, the shampoos, maybe steroids or Apoquel. It quietens down, then it's back. The relief never lasts.",
     recommend: "probioPlus",
     skinUpsell: true,
+    image: "/images/symptoms/itchy-skin.jpg",
   },
   {
     id: "gunky-ears",
@@ -67,6 +74,11 @@ export const SYMPTOMS: Symptom[] = [
       "You clean them and days later they're gunky and smelly again. More drops, more vet trips, and the head-shaking never really stops. It's exhausting — for both of you.",
     recommend: "probioPlus",
     skinUpsell: false,
+    image: "/images/symptoms/gunky-ears.jpg",
+    beforeAfter: {
+      image: "/images/symptoms/gunky-ears-before-after.jpg",
+      caption: "A real customer's dog — the same ear, before and after Good for Pets.",
+    },
   },
   {
     id: "tummy",
@@ -82,6 +94,7 @@ export const SYMPTOMS: Symptom[] = [
       "The sloppy poos, the rumbling tummy, the wind. You're second-guessing every meal and never quite sure what's setting him off.",
     recommend: "probioPlus",
     skinUpsell: false,
+    image: "/images/symptoms/tummy.jpg",
   },
   {
     id: "scooting",

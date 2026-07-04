@@ -58,6 +58,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             Our recommendation for {dog}
           </div>
           <div className="p-6">
+            <img
+              src={rec.hero.image}
+              alt={rec.hero.name}
+              className="mx-auto mb-4 h-36 w-auto object-contain drop-shadow-md"
+            />
             <h2 className="text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
             <p className="mt-1 font-semibold text-brand-red">{rec.hero.tagline}</p>
             <ul className="mt-4 space-y-2">
@@ -92,7 +97,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         {rec.upsell && (
           <div className="mt-4 rounded-3xl border-2 border-dashed border-brand-red/40 bg-white/60 p-5">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">➕</span>
+              <img
+                src={rec.upsell.image}
+                alt={rec.upsell.name}
+                className="h-16 w-16 shrink-0 object-contain drop-shadow"
+              />
               <div className="flex-1">
                 <p className="text-xs font-bold uppercase tracking-wide text-brand-red">
                   Add extra support for {dog}

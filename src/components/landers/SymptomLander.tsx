@@ -8,6 +8,10 @@ import type { Symptom } from "@/data/symptoms";
 import { PRODUCTS } from "@/data/products";
 import { testimonialsFor } from "@/data/testimonials";
 
+// Shared imagery used on every lander (not symptom-specific)
+const VET_IMG = "/images/people/kishan.jpg";
+const UGC_IMG = "/images/ugc/happy-dog.jpg";
+
 export function SymptomLander({ symptom }: { symptom: Symptom }) {
   const product = PRODUCTS[symptom.recommend];
   const upsell = symptom.skinUpsell ? PRODUCTS.skinGutDuo : null;
@@ -52,6 +56,14 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
         <p className="mx-auto mt-3 max-w-md text-lg leading-relaxed text-brand-ink/75">
           {symptom.agitate}
         </p>
+        {symptom.image && (
+          <img
+            src={symptom.image}
+            alt={`A dog with ${symptom.eyebrow.toLowerCase()}`}
+            loading="lazy"
+            className="mx-auto mt-8 aspect-[3/2] w-full max-w-md rounded-2xl object-cover shadow-card"
+          />
+        )}
       </section>
 
       {/* Mechanism — the #1 differentiator */}
@@ -86,6 +98,28 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
         </div>
       </section>
 
+      {/* Real customer before/after (ears) */}
+      {symptom.beforeAfter && (
+        <section className="container-page py-14">
+          <div className="mx-auto max-w-sm text-center">
+            <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
+              Real result
+            </span>
+            <figure className="mt-5">
+              <img
+                src={symptom.beforeAfter.image}
+                alt="A dog's ear before and after Good for Pets"
+                loading="lazy"
+                className="mx-auto w-full max-w-[300px] rounded-2xl shadow-card"
+              />
+              <figcaption className="mt-3 text-sm text-brand-ink/60">
+                {symptom.beforeAfter.caption}
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+      )}
+
       {/* Proof — matched to this exact symptom */}
       {proof.length > 0 && (
         <section className="py-14">
@@ -105,6 +139,28 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
         </section>
       )}
 
+      {/* Vet authority strip */}
+      <section className="bg-white py-14">
+        <div className="container-wide">
+          <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 rounded-3xl bg-brand-cream p-6 shadow-card sm:flex-row sm:p-8">
+            <img
+              src={VET_IMG}
+              alt="Kishan, veterinary surgeon, with Good for Pets products"
+              loading="lazy"
+              className="h-40 w-40 shrink-0 rounded-2xl object-cover"
+            />
+            <div className="text-center sm:text-left">
+              <h2 className="text-xl font-extrabold text-brand-ink">Made properly — here in the UK</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/75">
+                5 billion live bacteria, 5 strains, 6 digestive enzymes and a prebiotic — cold-pressed
+                so the bacteria stay alive, and made to GMP standards right here in the UK.
+              </p>
+              <p className="mt-3 text-sm font-semibold text-brand-ink/60">— Kishan, veterinary surgeon</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Offer / product */}
       <section className="bg-white py-14">
         <div className="container-page">
@@ -113,6 +169,12 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
               The plan for {symptom.eyebrow.toLowerCase()}
             </div>
             <div className="p-6">
+              <img
+                src={product.image}
+                alt={product.name}
+                loading="lazy"
+                className="mx-auto mb-4 h-40 w-auto object-contain drop-shadow-md"
+              />
               <h3 className="text-2xl font-extrabold text-brand-ink">{product.name}</h3>
               <p className="mt-1 font-semibold text-brand-red">{product.tagline}</p>
               <p className="mt-3 text-sm text-brand-ink/70">{product.format}</p>
@@ -170,6 +232,12 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
       {/* Final CTA */}
       <section className="bg-brand-red py-14 text-center text-white">
         <div className="container-page">
+          <img
+            src={UGC_IMG}
+            alt="A happy dog with Good for Pets"
+            loading="lazy"
+            className="mx-auto mb-7 aspect-[4/5] w-44 rounded-2xl object-cover shadow-lg ring-4 ring-white/20"
+          />
           <h2 className="text-3xl font-extrabold">Ready to stop guessing?</h2>
           <p className="mx-auto mt-3 max-w-sm text-white/90">
             Give {product.name} a proper go — backed by real reviews and a wall of happy dogs.

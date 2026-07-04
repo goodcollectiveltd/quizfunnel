@@ -23,6 +23,7 @@ export interface Product {
   strength: string;
   supports: string;
   pdpUrl: string;
+  image: string; // transparent PNG cutout — /images/products/<key>.png
   contents: string[];
   // Upsell framing (used when a product is offered as an add-on, not the hero)
   addOnLabel?: string; // e.g. "Add Omega 3-6-9"
@@ -38,6 +39,7 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     strength: "5 billion live bacteria per capsule",
     supports: "gut health, digestion and everyday comfort",
     pdpUrl: PDP_URLS.probioPlus,
+    image: "/images/products/probioPlus.png",
     contents: [
       "5 live probiotic strains + 6 digestive enzymes",
       "Prebiotic inulin from chicory root",
@@ -53,6 +55,7 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     strength: "Omega 3, 6 & 9 from fish, flaxseed & sunflower oils",
     supports: "skin, coat and general condition",
     pdpUrl: PDP_URLS.omega,
+    image: "/images/products/omega.png",
     contents: [
       "Omega 3-6-9 + vitamin E for skin and coat",
       "Works alongside Probio+ — settle the gut, feed the skin",
@@ -71,6 +74,7 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     strength: "5 billion live bacteria + omega 3-6-9",
     supports: "gut health plus skin and coat condition",
     pdpUrl: PDP_URLS.skinGutDuo,
+    image: "/images/products/skinGutDuo.png",
     contents: [
       "Everything in Probio+ (5 strains, enzymes, prebiotic)",
       "Omega 3-6-9 for skin, coat and general condition",

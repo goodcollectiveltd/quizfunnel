@@ -52,6 +52,21 @@ All copy is drawn from `company-context/` (messaging-bank, personas, testimonial
 product reference). Benefit-led, never medical/cure claims — supplements *support*,
 they don't *treat/cure/prevent*. Brand red `#EF3824`.
 
+## Images
+
+The **landers** carry imagery (the quiz stays text-only by design). All assets live in
+`public/images/` (web-optimised, ~2.4MB total) and are wired via data:
+
+- **Product cut-outs** (`products/*.png`) — `Product.image` in [products.ts](src/data/products.ts); shown on the offer card and the quiz result.
+- **Symptom photos** (`symptoms/*.jpg`, 3:2) — `Symptom.image` in [symptoms.ts](src/data/symptoms.ts), in the "Sound familiar?" section. `scooting` & `tear-staining` have no photo (none exists on free stock) and render text-only.
+- **Ears before/after** (`symptoms/gunky-ears-before-after.jpg`) — real customer proof, a dedicated "Real result" block on the ears lander (`Symptom.beforeAfter`).
+- **Vet** (`people/kishan.jpg`) and **UGC dog** (`ugc/happy-dog.jpg`) — shared trust strip + final-CTA image (constants in [SymptomLander.tsx](src/components/landers/SymptomLander.tsx)).
+
+Source & captions: `company-context/image-bank/INDEX.md`. To re-crop from full-res originals, use `company-context/image-bank/_tools/crop.py`.
+
+> ⚠️ **Image licensing / consent** — before any paid campaign, verify rights per the image bank's flags:
+> the vet shoot is cleared for GFP use; **Murphy** (ears before/after) & **Jazzy-D** (UGC dog) are creator UGC marked *consent likely — [CONFIRM]*; the symptom stock photos have *unconfirmed provenance* on the non-Pexels files. See `image-bank/INDEX.md`.
+
 ## ⚠️ Open items before going live ([TO CONFIRM])
 
 1. **PDP URLs** — `src/data/products.ts` uses placeholder Shopify handles
