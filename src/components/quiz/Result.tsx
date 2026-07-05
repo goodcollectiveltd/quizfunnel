@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
@@ -19,6 +19,19 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     new Date(now.getTime() + days * 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
+
+  // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
+  const ctaRef = useRef<HTMLAnchorElement>(null);
+  const [showSticky, setShowSticky] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const el = ctaRef.current;
+      if (el) setShowSticky(el.getBoundingClientRect().bottom < 0);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="min-h-dvh pb-20">
@@ -128,7 +141,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong> — no giant tablet to crush. Just open and mix into food.
               </p>
             )}
-            <a href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
+            <a ref={ctaRef} href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
               Start {dogPossessive} plan →
             </a>
@@ -192,6 +205,18 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           Not baked. Not dressed up as a treat. Just what actually works — with 51% of profits going to animal rescue.
         </p>
       </main>
+
+      {/* Sticky CTA — follows the user once the main button scrolls away */}
+      {showSticky && (
+        <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-brand-cream/95 backdrop-blur">
+          <div className="container-page py-3">
+            <a href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
+              Start {dogPossessive} plan →
+            </a>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
