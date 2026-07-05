@@ -152,12 +152,17 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
               className="w-44 shrink-0 rounded-2xl sm:w-48"
             />
             <div className="text-center sm:text-left">
-              <h2 className="text-xl font-extrabold text-brand-ink">Made properly — here in the UK</h2>
+              <h2 className="text-xl font-extrabold text-brand-ink">Shaped by a vet, made properly in the UK</h2>
               <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/75">
-                5 billion live bacteria, 5 strains, 6 digestive enzymes and a prebiotic — cold-pressed
-                so the bacteria stay alive, and made to GMP standards right here in the UK.
+                Dr Kishan Vara helps guide what goes into every product — evidence-based and
+                preventative. 5 billion live bacteria, cold-pressed so they stay alive, and made to
+                GMP standards right here in the UK.
               </p>
-              <p className="mt-3 text-sm font-semibold text-brand-ink/60">— Dr Kishan Vara, our veterinary partner</p>
+              <p className="mt-3 text-sm font-bold text-brand-ink">Dr Kishan Vara</p>
+              <p className="text-xs text-brand-ink/55">
+                Veterinary surgeon, Royal Veterinary College · MSc Regenerative Medicine · our
+                veterinary partner
+              </p>
             </div>
           </div>
         </div>
