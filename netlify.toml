@@ -1,0 +1,10 @@
+# Netlify config. (Cloudflare ignores this file, so it doesn't affect the Worker build.)
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# SPA fallback — serve index.html for any path so client-side routing/deep links work.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
