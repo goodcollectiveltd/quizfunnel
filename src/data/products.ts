@@ -6,11 +6,12 @@
 
 export const STORE_ORIGIN = "https://www.goodforpets.co";
 
-// TODO[TO CONFIRM]: replace these product handles with the real Shopify handles.
+// Live goodforpets.co product URLs. (Omega handle still [TO CONFIRM] — not yet
+// surfaced in the UI, so harmless until we add an Omega-only recommendation.)
 export const PDP_URLS = {
-  probioPlus: `${STORE_ORIGIN}/products/5-strain-probiotic-plus`,
+  probioPlus: `${STORE_ORIGIN}/products/5-strain-probiotic`,
   omega: `${STORE_ORIGIN}/products/omega-3-6-9-complex`,
-  skinGutDuo: `${STORE_ORIGIN}/products/skin-and-gut-duo`,
+  skinGutDuo: `${STORE_ORIGIN}/products/skin-and-gut-love`,
 } as const;
 
 export type ProductKey = "probioPlus" | "omega" | "skinGutDuo";

@@ -13,6 +13,13 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const dogPossessive = answers.dogName.trim() ? `${answers.dogName.trim()}'s` : "your dog's";
   const selected = answers.symptoms.map((s) => symptomById(s));
 
+  // Personalised timeline: first significant change ~8 weeks; 90-day results guarantee.
+  const now = new Date();
+  const fmt = (days: number) =>
+    new Date(now.getTime() + days * 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+  const etaDate = fmt(56);
+  const guaranteeDate = fmt(90);
+
   return (
     <div className="min-h-dvh pb-20">
       <header className="container-page flex justify-center py-5"><Logo /></header>
@@ -59,6 +66,39 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             </div>
           ))}
         </div>
+
+        {/* What's possible — personalised projection */}
+        <section className="mt-8 overflow-hidden rounded-3xl bg-brand-ink p-6 text-white">
+          <p className="text-xs font-bold uppercase tracking-wide text-brand-sky">What's possible for {dog}</p>
+          <h2 className="mt-2 text-2xl font-extrabold leading-tight">
+            Most owners see the first big change within <span className="text-brand-sky">8 weeks</span> — by {etaDate}.
+          </h2>
+          <svg viewBox="0 0 320 180" className="mt-5 w-full" role="img" aria-label={`Projected improvement for ${dog} over 90 days`}>
+            <defs>
+              <linearGradient id="proj-area" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#95D8E9" stopOpacity="0.4" />
+                <stop offset="100%" stopColor="#95D8E9" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            <line x1="20" y1="34" x2="300" y2="34" stroke="#fff" strokeOpacity="0.15" strokeDasharray="4 4" />
+            <text x="20" y="28" fill="#fff" fillOpacity="0.5" fontSize="9">Thriving</text>
+            <path d="M24,140 C 120,138 150,96 300,40 L300,152 L24,152 Z" fill="url(#proj-area)" />
+            <path d="M24,140 C 120,138 150,96 300,40" fill="none" stroke="#95D8E9" strokeWidth="3" />
+            <circle cx="24" cy="140" r="5" fill="#EF3824" />
+            <text x="33" y="133" fill="#fff" fontSize="9" fontWeight="bold">You are here</text>
+            <line x1="196" y1="34" x2="196" y2="152" stroke="#fff" strokeOpacity="0.25" strokeDasharray="3 3" />
+            <circle cx="196" cy="74" r="5" fill="#fff" />
+            <text x="24" y="168" fill="#fff" fillOpacity="0.5" fontSize="9">Today</text>
+            <text x="196" y="168" fill="#fff" fontSize="9" fontWeight="bold" textAnchor="middle">Week 8</text>
+            <text x="300" y="168" fill="#fff" fillOpacity="0.5" fontSize="9" textAnchor="end">Day 90</text>
+          </svg>
+          <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white/10 p-4">
+            <span className="text-2xl">🛡️</span>
+            <p className="text-sm text-white/90">
+              <strong>Results guaranteed in 90 days.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund you in full.
+            </p>
+          </div>
+        </section>
 
         {rec.triedBefore && (
           <p className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center text-[15px] text-brand-ink/80">
@@ -116,13 +156,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         )}
 
-        {/* Guarantee / risk reversal */}
-        <div className="mt-6 rounded-2xl bg-brand-ink p-5 text-center text-white">
-          <p className="font-bold">Give it the full window, risk-free</p>
-          <p className="mt-1 text-sm text-white/80">
-            Most owners see a change in 2–6 weeks. Try it, subscribe &amp; save, and pause or cancel anytime — no lock-in.
-          </p>
-        </div>
+        {/* Flexibility reassurance (guarantee lives in the projection above) */}
+        <p className="mt-5 text-center text-sm font-semibold text-brand-ink/60">
+          Subscribe &amp; save · pause or cancel anytime · backed by our 90-day results guarantee
+        </p>
 
         {/* Matched proof */}
         {rec.proof.length > 0 && (
