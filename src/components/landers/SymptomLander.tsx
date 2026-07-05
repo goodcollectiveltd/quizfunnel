@@ -22,6 +22,29 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
     </Button>
   );
 
+  // Hero visual: lead with the before/after where we have one (like the ad
+  // creatives), otherwise feature the product tub prominently.
+  const heroVisual = symptom.beforeAfter ? (
+    <figure className="mx-auto mt-8 w-full max-w-[280px]">
+      <div className="relative overflow-hidden rounded-2xl shadow-lg ring-4 ring-white/15">
+        <img src={symptom.beforeAfter.image} alt="Before and after" className="block w-full" />
+        <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
+          Before
+        </span>
+        <span className="absolute bottom-2 left-2 rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-white">
+          After
+        </span>
+      </div>
+      <figcaption className="mt-2 text-xs text-white/80">{symptom.beforeAfter.caption}</figcaption>
+    </figure>
+  ) : (
+    <img
+      src={product.image}
+      alt={product.name}
+      className="mx-auto mt-8 h-56 w-auto object-contain drop-shadow-2xl"
+    />
+  );
+
   return (
     <div className="min-h-dvh">
       {/* Hero */}
@@ -40,6 +63,7 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
             {symptom.headline}
           </h1>
           <p className="mx-auto mt-4 max-w-md text-lg text-white/90">{symptom.subhead}</p>
+          {heroVisual}
           <div className="mt-7 flex flex-col items-center gap-3">
             {cta(`Get ${product.name} →`)}
             <div className="flex items-center gap-2 text-sm text-white/90">
@@ -98,28 +122,6 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
         </div>
       </section>
 
-      {/* Real customer before/after (ears) */}
-      {symptom.beforeAfter && (
-        <section className="container-page py-14">
-          <div className="mx-auto max-w-sm text-center">
-            <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
-              Real result
-            </span>
-            <figure className="mt-5">
-              <img
-                src={symptom.beforeAfter.image}
-                alt="A dog's ear before and after Good for Pets"
-                loading="lazy"
-                className="mx-auto w-full max-w-[300px] rounded-2xl shadow-card"
-              />
-              <figcaption className="mt-3 text-sm text-brand-ink/60">
-                {symptom.beforeAfter.caption}
-              </figcaption>
-            </figure>
-          </div>
-        </section>
-      )}
-
       {/* Proof — matched to this exact symptom */}
       {proof.length > 0 && (
         <section className="py-14">
@@ -145,7 +147,7 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
           <div className="mx-auto flex max-w-2xl flex-col items-center gap-6 rounded-3xl bg-brand-cream p-6 shadow-card sm:flex-row sm:p-8">
             <img
               src={VET_IMG}
-              alt="Kishan, veterinary surgeon, with Good for Pets products"
+              alt="Dr Kishan Vara, veterinary partner, with Good for Pets products"
               loading="lazy"
               className="w-44 shrink-0 rounded-2xl sm:w-48"
             />
@@ -155,7 +157,7 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
                 5 billion live bacteria, 5 strains, 6 digestive enzymes and a prebiotic — cold-pressed
                 so the bacteria stay alive, and made to GMP standards right here in the UK.
               </p>
-              <p className="mt-3 text-sm font-semibold text-brand-ink/60">— Kishan, veterinary surgeon</p>
+              <p className="mt-3 text-sm font-semibold text-brand-ink/60">— Dr Kishan Vara, our veterinary partner</p>
             </div>
           </div>
         </div>
@@ -173,7 +175,7 @@ export function SymptomLander({ symptom }: { symptom: Symptom }) {
                 src={product.image}
                 alt={product.name}
                 loading="lazy"
-                className="mx-auto mb-4 h-40 w-auto object-contain drop-shadow-md"
+                className="mx-auto mb-4 h-56 w-auto object-contain drop-shadow-lg"
               />
               <h3 className="text-2xl font-extrabold text-brand-ink">{product.name}</h3>
               <p className="mt-1 font-semibold text-brand-red">{product.tagline}</p>

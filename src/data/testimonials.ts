@@ -232,6 +232,39 @@ export const TESTIMONIALS: Testimonial[] = [
 
 export const byId = (id: string) => TESTIMONIALS.find((t) => t.id === id)!;
 
+// Real Good for Pets community dogs (from the image bank) used as review avatars
+// for authenticity. Breed-matched to the reviewer's dog where known; assigned so no
+// two reviews shown together on a lander share a dog. Not a claim that a given photo
+// is that specific reviewer's dog. Files: /images/reviews/<name>.jpg
+const AVATARS: Record<string, string> = {
+  T01: "springer",
+  T03: "chihuahua",
+  T04: "staffie",
+  T07: "retriever",
+  T10: "beagle",
+  T11: "collie",
+  T13: "cavapoo",
+  T14: "shihtzu",
+  T15: "jack-russell",
+  T16: "pug",
+  T17: "black-lab",
+  T20: "beagle2",
+  T21: "silver-lab",
+  T22: "choc-lab",
+  T23: "dachshund",
+  T28: "black-lab",
+  T29: "retriever",
+  T30: "cavapoo",
+  T32: "collie",
+  T33: "cavapoo",
+  T34: "retriever", // TODO: swap to Elaine Conway's real Labs once the file lands
+  T35: "cockapoo",
+  T38: "beagle2",
+};
+
+export const avatarFor = (id: string): string | undefined =>
+  AVATARS[id] ? `/images/reviews/${AVATARS[id]}.jpg` : undefined;
+
 /** All testimonials tagged with a given symptom, in bank order. */
 export function testimonialsFor(symptom: SymptomTag): Testimonial[] {
   return TESTIMONIALS.filter((t) => t.symptoms.includes(symptom));

@@ -61,6 +61,9 @@ The **landers** carry imagery (the quiz stays text-only by design). All assets l
 - **Symptom photos** (`symptoms/*.jpg`, 3:2) — `Symptom.image` in [symptoms.ts](src/data/symptoms.ts), in the "Sound familiar?" section. `scooting` & `tear-staining` have no photo (none exists on free stock) and render text-only.
 - **Ears before/after** (`symptoms/gunky-ears-before-after.jpg`) — real customer proof, a dedicated "Real result" block on the ears lander (`Symptom.beforeAfter`).
 - **Vet** (`people/kishan.jpg`) and **UGC dog** (`ugc/happy-dog.jpg`) — shared trust strip + final-CTA image (constants in [SymptomLander.tsx](src/components/landers/SymptomLander.tsx)).
+- **Review avatars** (`reviews/*.jpg`) — real community dogs used as testimonial profile photos, mapped per review in the `AVATARS` table in [testimonials.ts](src/data/testimonials.ts) (breed-matched where known; assigned so no two dogs collide on a lander). Decorative authenticity — not a claim that a given dog is that reviewer's.
+
+Team names/titles/accreditations for on-page use: `company-context/people-and-team.md` (e.g. "Dr Kishan Vara, our veterinary partner").
 
 Source & captions: `company-context/image-bank/INDEX.md`. To re-crop from full-res originals, use `company-context/image-bank/_tools/crop.py`. All image-bank assets are cleared for Good for Pets use.
 
