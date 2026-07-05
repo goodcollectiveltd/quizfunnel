@@ -1,37 +1,47 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 
-const LINES = [
-  "Matching the symptoms…",
-  "Reading 300+ real reviews…",
-  "Checking the cold-press mechanism…",
-  "Building the plan…",
+const STEPS = [
+  "Analysing the symptoms",
+  "Reading the gut signals",
+  "Cross-referencing 10,000+ dogs",
+  "Building the plan",
 ];
 
 export function Analysing({ dog, onDone }: { dog: string; onDone: () => void }) {
-  const [i, setI] = useState(0);
+  const [done, setDone] = useState(0);
   useEffect(() => {
-    const step = setInterval(() => setI((v) => Math.min(v + 1, LINES.length - 1)), 650);
-    const done = setTimeout(onDone, 2600);
+    const t = setInterval(() => setDone((d) => Math.min(d + 1, STEPS.length)), 700);
+    const finish = setTimeout(onDone, 3200);
     return () => {
-      clearInterval(step);
-      clearTimeout(done);
+      clearInterval(t);
+      clearTimeout(finish);
     };
   }, [onDone]);
 
   return (
     <div className="grid min-h-dvh place-items-center">
-      <div className="container-page flex flex-col items-center text-center">
-        <Logo />
-        <div className="relative mt-10 grid h-20 w-20 place-items-center">
-          <span className="absolute inset-0 rounded-full bg-brand-red/30 animate-pulse-ring" />
-          <span className="absolute inset-0 rounded-full bg-brand-red/20 animate-pulse-ring [animation-delay:0.5s]" />
-          <span className="relative grid h-16 w-16 place-items-center rounded-full bg-brand-red text-3xl">🐾</span>
+      <div className="container-page w-full">
+        <div className="flex flex-col items-center text-center">
+          <Logo />
+          <h1 className="mt-8 text-2xl font-extrabold text-brand-ink">Building {dog}'s gut &amp; skin plan…</h1>
+          <p className="mt-2 text-brand-ink/60">Mapping the answers against the Good for Pets method.</p>
         </div>
-        <h1 className="mt-8 text-xl font-extrabold text-brand-ink">
-          Building {dog}'s relief plan
-        </h1>
-        <p className="mt-2 h-6 text-brand-ink/60 transition-all">{LINES[i]}</p>
+        <ul className="mx-auto mt-8 max-w-sm space-y-3">
+          {STEPS.map((label, i) => {
+            const state = i < done ? "done" : i === done ? "active" : "todo";
+            return (
+              <li key={label}
+                className={`flex items-center gap-3 rounded-2xl border-2 bg-white p-4 transition-all ${state === "active" ? "border-brand-red shadow-card" : "border-transparent"} ${state === "todo" ? "opacity-40" : ""}`}>
+                <span className={`grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm ${state === "done" ? "bg-brand-red text-white" : "bg-brand-ink/10 text-brand-ink/50"}`}>
+                  {state === "done" ? "✓" : state === "active" ? "•" : ""}
+                </span>
+                <span className={`font-semibold ${state === "done" ? "text-brand-ink" : "text-brand-ink/70"}`}>{label}</span>
+                {state === "active" && <span className="ml-auto text-xs font-semibold text-brand-red">…</span>}
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </div>
   );

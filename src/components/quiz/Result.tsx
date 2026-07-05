@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, type QuizAnswers } from "@/lib/recommend";
 import { symptomById } from "@/data/symptoms";
+
+const VET_IMG = "/images/people/kishan.jpg";
 
 export function Result({ answers }: { answers: QuizAnswers }) {
   const rec = buildRecommendation(answers);
@@ -14,106 +15,100 @@ export function Result({ answers }: { answers: QuizAnswers }) {
 
   return (
     <div className="min-h-dvh pb-20">
-      <header className="container-page flex justify-center py-5">
-        <Logo />
-      </header>
+      <header className="container-page flex justify-center py-5"><Logo /></header>
 
       <main className="container-page">
-        {/* Personalised header */}
+        {/* Diagnosis header */}
         <div className="animate-fade-up text-center">
           <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
-            {dogPossessive} plan is ready
+            {dogPossessive} gut health assessment
           </span>
-          <h1 className="mt-4 text-3xl font-extrabold leading-tight text-brand-ink">
-            Based on {dogPossessive} {rec.primary.emoji} {rec.primary.eyebrow.toLowerCase()},
-            here's where we'd start.
-          </h1>
+          <h1 className="mt-4 text-3xl font-extrabold leading-tight text-brand-ink">{rec.rating}</h1>
+          <p className="mx-auto mt-3 max-w-md text-brand-ink/75">{rec.verdict}</p>
+        </div>
+
+        {/* Gut-health gauge */}
+        <div className="mt-7 rounded-3xl bg-white p-6 shadow-card">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm font-bold uppercase tracking-wide text-brand-ink/50">Gut balance</span>
+            <span className="text-2xl font-extrabold text-brand-red">{rec.gutScore}/100</span>
+          </div>
+          <div className="relative mt-3 h-3 rounded-full" style={{ background: "linear-gradient(90deg,#EF3824,#f5a623,#7bc043)" }}>
+            <div className="absolute -top-1.5 h-6 w-6 -translate-x-1/2 rounded-full border-4 border-white bg-brand-ink shadow" style={{ left: `${rec.gutScore}%` }} />
+          </div>
+          <div className="mt-2 flex justify-between text-xs font-semibold text-brand-ink/50">
+            <span>Needs support</span><span>Thriving</span>
+          </div>
         </div>
 
         {/* Symptom recap chips */}
         <div className="mt-5 flex flex-wrap justify-center gap-2">
           {selected.map((s) => (
-            <span
-              key={s.id}
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
-                s.id === rec.primary.id ? "bg-brand-red text-white" : "bg-white text-brand-ink/70 ring-1 ring-brand-ink/10"
-              }`}
-            >
+            <span key={s.id} className={`rounded-full px-3 py-1 text-sm font-medium ${s.id === rec.primary.id ? "bg-brand-red text-white" : "bg-white text-brand-ink/70 ring-1 ring-brand-ink/10"}`}>
               {s.emoji} {s.label}
             </span>
           ))}
         </div>
 
-        {/* Empathy line for the efficacy refugee */}
+        {/* Root-cause cards */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          {rec.rootCauses.map((c) => (
+            <div key={c.label} className="rounded-2xl bg-white p-4 shadow-card">
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-red">{c.label}</p>
+              <p className="mt-1 font-semibold text-brand-ink">{c.value}</p>
+            </div>
+          ))}
+        </div>
+
         {rec.triedBefore && (
           <p className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center text-[15px] text-brand-ink/80">
-            You've tried things before that let you down — you're not alone. "The only thing that
-            has worked, and I feel like I've tried every potion." — Kim B.
+            You've tried things before that let you down — you're not alone. "The only thing that has worked, and I feel like I've tried every potion." — Kim B.
           </p>
         )}
 
-        {/* Recommended product */}
+        {/* Recommendation */}
         <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-card">
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
-            Our recommendation for {dog}
+            {dogPossessive} recommended plan
           </div>
           <div className="p-6">
-            <img
-              src={rec.hero.image}
-              alt={rec.hero.name}
-              className="mx-auto mb-4 h-36 w-auto object-contain drop-shadow-md"
-            />
-            <h2 className="text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
-            <p className="mt-1 font-semibold text-brand-red">{rec.hero.tagline}</p>
+            <img src={rec.hero.image} alt={rec.hero.name} className="mx-auto mb-4 h-44 w-auto object-contain drop-shadow-md" />
+            <h2 className="text-center text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
+            <p className="mt-1 text-center font-semibold text-brand-red">{rec.hero.tagline}</p>
+            <p className="mx-auto mt-3 max-w-xs rounded-xl bg-brand-cream p-2 text-center text-sm font-semibold text-brand-ink">
+              For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}
+            </p>
             <ul className="mt-4 space-y-2">
               {rec.hero.contents.map((c) => (
-                <li key={c} className="flex gap-2 text-[15px] text-brand-ink/80">
-                  <span className="text-brand-red">✓</span>
-                  {c}
-                </li>
+                <li key={c} className="flex gap-2 text-[15px] text-brand-ink/80"><span className="text-brand-red">✓</span>{c}</li>
               ))}
             </ul>
-
             {rec.smallDog && (
               <p className="mt-4 rounded-xl bg-brand-sky/20 p-3 text-sm text-brand-ink/80">
-                🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle
-                capsules</strong> — no giant tablet to crush. Just open and mix into food.
+                🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong> — no giant tablet to crush. Just open and mix into food.
               </p>
             )}
-
-            <Link
-              to={`/relief/${rec.landerSlug}`}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105"
-            >
-              See {dogPossessive} {rec.primary.eyebrow.toLowerCase()} relief plan →
-            </Link>
+            <a href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
+              Start {dogPossessive} plan →
+            </a>
             <p className="mt-3 text-center text-xs text-brand-ink/50">
-              Backed by real reviews · 51% of profits to animal charities
+              Subscribe &amp; save — pause or cancel anytime · Most orders arrive in 2–3 working days
             </p>
           </div>
         </div>
 
-        {/* Optional add-on upsell — only when there's a skin/coat signal */}
+        {/* Upsell */}
         {rec.upsell && (
           <div className="mt-4 rounded-3xl border-2 border-dashed border-brand-red/40 bg-white/60 p-5">
             <div className="flex items-start gap-3">
-              <img
-                src={rec.upsell.image}
-                alt={rec.upsell.name}
-                className="h-16 w-16 shrink-0 object-contain drop-shadow"
-              />
+              <img src={rec.upsell.image} alt={rec.upsell.name} className="h-16 w-16 shrink-0 object-contain drop-shadow" />
               <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-red">
-                  Add extra support for {dog}
-                </p>
+                <p className="text-xs font-bold uppercase tracking-wide text-brand-red">Add extra support for {dog}</p>
                 <h3 className="mt-1 text-lg font-extrabold text-brand-ink">{rec.upsell.addOnLabel}</h3>
                 <p className="mt-1 text-sm text-brand-ink/70">{rec.upsell.addOnBlurb}</p>
-                <a
-                  href={rec.upsell.pdpUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4"
-                >
+                <a href={rec.upsell.pdpUrl} target="_blank" rel="noopener noreferrer"
+                  className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4">
                   {rec.upsell.addOnLabel} →
                 </a>
               </div>
@@ -121,26 +116,43 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         )}
 
+        {/* Guarantee / risk reversal */}
+        <div className="mt-6 rounded-2xl bg-brand-ink p-5 text-center text-white">
+          <p className="font-bold">Give it the full window, risk-free</p>
+          <p className="mt-1 text-sm text-white/80">
+            Most owners see a change in 2–6 weeks. Try it, subscribe &amp; save, and pause or cancel anytime — no lock-in.
+          </p>
+        </div>
+
         {/* Matched proof */}
         {rec.proof.length > 0 && (
           <section className="mt-12">
-            <h3 className="text-center text-xl font-extrabold text-brand-ink">
-              Dogs just like {dog} — in their owners' words
-            </h3>
+            <h3 className="text-center text-xl font-extrabold text-brand-ink">Dogs just like {dog} — in their owners' words</h3>
             <div className="mt-5 space-y-4">
-              {rec.proof.slice(0, 3).map((t) => (
-                <TestimonialCard key={t.id} t={t} />
-              ))}
+              {rec.proof.slice(0, 3).map((t) => (<TestimonialCard key={t.id} t={t} />))}
             </div>
           </section>
         )}
 
-        {/* Optional email capture — no gate, purely opt-in */}
+        {/* Vet authority */}
+        <section className="mt-10 rounded-3xl bg-white p-6 shadow-card">
+          <div className="flex flex-col items-center gap-5 sm:flex-row">
+            <img src={VET_IMG} alt="Dr Kishan Vara, veterinary partner" className="w-40 shrink-0 rounded-2xl" />
+            <div className="text-center sm:text-left">
+              <h3 className="text-lg font-extrabold text-brand-ink">Guided by a vet, made in the UK</h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/75">
+                Dr Kishan Vara helps guide what goes into every product — evidence-based, cold-pressed so the bacteria stay alive, and made to GMP standards.
+              </p>
+              <p className="mt-2 text-sm font-bold text-brand-ink">Dr Kishan Vara</p>
+              <p className="text-xs text-brand-ink/55">Veterinary surgeon, Royal Veterinary College · our veterinary partner</p>
+            </div>
+          </div>
+        </section>
+
         <EmailCapture dog={dog} />
 
         <p className="mx-auto mt-10 max-w-md text-center text-sm text-brand-ink/60">
-          Most owners see a change in 2–6 weeks — give it the full window. Not baked, not dressed up
-          as a treat. Just what actually works.
+          Not baked. Not dressed up as a treat. Just what actually works — with 51% of profits going to animal rescue.
         </p>
       </main>
     </div>
@@ -150,6 +162,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
 function EmailCapture({ dog }: { dog: string }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const submit = () => { if (email.includes("@")) setSent(true); };
   if (sent) {
     return (
       <div className="mt-12 rounded-2xl bg-white p-5 text-center shadow-card">
@@ -157,26 +170,14 @@ function EmailCapture({ dog }: { dog: string }) {
       </div>
     );
   }
-  // TODO: wire to a real list (Klaviyo/Shopify). No backend in this build.
-  const submit = () => {
-    if (email.includes("@")) setSent(true);
-  };
   return (
     <div className="mt-12 rounded-2xl bg-white p-5 shadow-card">
       <p className="text-center font-semibold text-brand-ink">Want {dog}'s plan emailed to you?</p>
       <p className="mt-1 text-center text-sm text-brand-ink/50">Optional — no spam, unsubscribe anytime.</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="you@email.com"
-          className="flex-1 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-3 outline-none focus:border-brand-red"
-        />
-        <Button size="md" onClick={submit} className="shrink-0">
-          Email it
-        </Button>
+        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()}
+          placeholder="you@email.com" className="flex-1 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-3 outline-none focus:border-brand-red" />
+        <Button size="md" onClick={submit} className="shrink-0">Email it</Button>
       </div>
     </div>
   );
