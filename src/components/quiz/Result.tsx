@@ -26,9 +26,28 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const heroUrl = withAttribution(rec.hero.pdpUrl);
   const upsellUrl = rec.upsell ? withAttribution(rec.upsell.pdpUrl) : "#";
   useEffect(() => {
-    track("Lead", { primary: rec.primary.id, product: rec.hero.name, gut_score: rec.gutScore });
-  }, [rec.primary.id, rec.hero.name, rec.gutScore]);
+    track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore });
+  }, [answers.symptoms, rec.hero.name, rec.gutScore]);
   const onBuy = (product: string) => track("InitiateCheckout", { content_name: product });
+
+  // Everything from the quiz, saved onto the Klaviyo customer profile (incl. dog's name).
+  const profile: Record<string, unknown> = {
+    dog_name: answers.dogName.trim() || undefined,
+    dog_size: answers.size,
+    dog_age: answers.age,
+    symptoms: rec.symptoms.map((s) => s.noun),
+    stool_consistency: answers.stool,
+    poo_frequency: answers.pooFreq,
+    wind: answers.wind,
+    issue_duration: answers.duration,
+    tried_before: answers.tried,
+    diet: answers.diet,
+    recommended_product: rec.hero.name,
+    recommended_upsell: rec.upsell?.name ?? null,
+    gut_score: rec.gutScore,
+    gut_rating: rec.rating,
+    quiz_source: "good-for-pets-quiz",
+  };
 
   // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
   const ctaRef = useRef<HTMLAnchorElement>(null);
@@ -71,13 +90,18 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         </div>
 
-        {/* Symptom recap chips */}
-        <div className="mt-5 flex flex-wrap justify-center gap-2">
-          {selected.map((s) => (
-            <span key={s.id} className={`rounded-full px-3 py-1 text-sm font-medium ${s.id === rec.primary.id ? "bg-brand-red text-white" : "bg-white text-brand-ink/70 ring-1 ring-brand-ink/10"}`}>
-              {s.emoji} {s.label}
-            </span>
-          ))}
+        {/* Symptom recap — every selected symptom, addressed equally */}
+        <div className="mt-6">
+          <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-ink/50">
+            {dogPossessive} plan tackles all of this
+          </p>
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            {selected.map((s) => (
+              <span key={s.id} className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-3 py-1 text-sm font-semibold text-brand-red">
+                <span className="text-brand-red">✓</span> {s.emoji} {s.label}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Root-cause cards */}
@@ -209,7 +233,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         </section>
 
-        <EmailCapture dog={dog} />
+        <EmailCapture dog={dog} profile={profile} />
 
         <p className="mx-auto mt-10 max-w-md text-center text-sm text-brand-ink/60">
           Not baked. Not dressed up as a treat. Just what actually works — with 51% of profits going to animal rescue.
@@ -231,13 +255,13 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   );
 }
 
-function EmailCapture({ dog }: { dog: string }) {
+function EmailCapture({ dog, profile }: { dog: string; profile: Record<string, unknown> }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const submit = async () => {
     if (!email.includes("@")) return;
     setSent(true); // optimistic — never block the user
-    const ok = await subscribeEmail(email, { dog_name: dog, source: "quiz" });
+    const ok = await subscribeEmail(email, profile);
     if (ok) track("CompleteRegistration", { dog_name: dog });
   };
   if (sent) {

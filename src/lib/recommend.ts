@@ -14,13 +14,12 @@ export interface QuizAnswers {
   dogName: string;
   size: DogSize | null;
   age: AgeBand | null;
-  symptoms: SymptomTag[]; // all selected
-  primary: SymptomTag | null; // the biggest issue → personalisation anchor
+  symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan
   stool: Stool | null;
   pooFreq: PooFreq | null;
   wind: Wind | null;
   duration: Duration | null;
-  tried: string[]; // ids from TRIED options
+  tried: string[];
   diet: string | null;
 }
 
@@ -29,7 +28,6 @@ export const emptyAnswers: QuizAnswers = {
   size: null,
   age: null,
   symptoms: [],
-  primary: null,
   stool: null,
   pooFreq: null,
   wind: null,
@@ -59,17 +57,18 @@ export interface RootCause {
 }
 
 export interface Recommendation {
-  primary: Symptom;
+  symptoms: Symptom[]; // all selected, resolved — the plan addresses every one
   hero: Product; // always Probio+ — the foundation for the whole cluster
   upsell: Product | null; // Skin & Gut Duo add-on when there's a skin/coat signal
-  proof: Testimonial[]; // matched, de-duped, best first
-  smallDog: boolean; // surface the sprinkle-capsule reassurance
+  proof: Testimonial[]; // matched across ALL symptoms, best first
+  smallDog: boolean;
   triedBefore: boolean;
   dose: string;
+  beforeAfterKind: "skin" | "ears";
   // Diagnosis
   gutScore: number; // 0–100 (lower = more imbalance)
-  rating: string; // e.g. "Out of balance"
-  verdict: string; // one-line diagnosis
+  rating: string;
+  verdict: string;
   rootCauses: RootCause[];
 }
 
@@ -79,14 +78,29 @@ export function hasSkinSignal(a: QuizAnswers): boolean {
   return a.symptoms.some((s) => SKIN_SYMPTOMS.includes(s));
 }
 
-/** Rank matched testimonials: primary-symptom proof first, then secondary, de-duped. */
-function matchedProof(a: QuizAnswers, primary: SymptomTag): Testimonial[] {
-  const secondary = a.symptoms.filter((s) => s !== primary);
+/** Which before/after to show: skin transformation for a skin signal, else ears if relevant. */
+export function beforeAfterKind(a: QuizAnswers): "skin" | "ears" {
+  if (hasSkinSignal(a)) return "skin";
+  if (a.symptoms.includes("gunky-ears")) return "ears";
+  return "skin";
+}
+
+/** Natural language list of the selected symptoms, e.g. "paw licking, itchy skin and gunky ears". */
+function joinNouns(nouns: string[]): string {
+  if (nouns.length === 0) return "the symptoms you mentioned";
+  if (nouns.length === 1) return nouns[0];
+  if (nouns.length === 2) return `${nouns[0]} and ${nouns[1]}`;
+  return `${nouns.slice(0, -1).join(", ")} and ${nouns[nouns.length - 1]}`;
+}
+
+/**
+ * Rank testimonials by how many of the dog's symptoms they cover — every selected
+ * symptom counts equally, so the proof reflects the whole picture, not one symptom.
+ */
+function matchedProof(a: QuizAnswers): Testimonial[] {
   const triedBefore = a.tried.some((t) => t !== "nothing");
   const score = (t: Testimonial) => {
-    let n = 0;
-    if (t.symptoms.includes(primary)) n += 10;
-    n += t.symptoms.filter((s) => secondary.includes(s)).length;
+    let n = t.symptoms.filter((s) => a.symptoms.includes(s)).length * 3;
     if (triedBefore && t.angles?.includes("tried-everything")) n += 2;
     return n;
   };
@@ -96,13 +110,9 @@ function matchedProof(a: QuizAnswers, primary: SymptomTag): Testimonial[] {
     .map((x) => x.t);
 }
 
-/**
- * A believable "gut health" score. Everyone taking the quiz has symptoms, so it always
- * lands in the "needs support" zone — the score quantifies how far out of balance.
- */
 function gutScore(a: QuizAnswers): number {
   let score = 82;
-  score -= a.symptoms.length * 6; // each symptom = more imbalance
+  score -= a.symptoms.length * 6;
   if (a.stool && ["runny", "soft", "varies"].includes(a.stool)) score -= 10;
   if (a.pooFreq && ["more", "irregular", "none"].includes(a.pooFreq)) score -= 6;
   if (a.wind === "often") score -= 8;
@@ -110,7 +120,7 @@ function gutScore(a: QuizAnswers): number {
   if (a.duration === "gt1y") score -= 10;
   else if (a.duration === "6to12m") score -= 6;
   const triedCount = a.tried.filter((t) => t !== "nothing").length;
-  score -= Math.min(triedCount * 3, 12); // tried & failed = more entrenched
+  score -= Math.min(triedCount * 3, 12);
   return Math.max(18, Math.min(74, score));
 }
 
@@ -121,53 +131,50 @@ function ratingFor(score: number): string {
 }
 
 function rootCausesFor(a: QuizAnswers): RootCause[] {
-  const causes: RootCause[] = [
-    { label: "Likely root cause", value: "Gut microbiome imbalance" },
-  ];
-  if (hasSkinSignal(a)) {
-    causes.push({ label: "The mechanism", value: "The skin–gut axis" });
-  } else if (a.primary === "gunky-ears") {
-    causes.push({ label: "The mechanism", value: "Yeast & gut balance" });
-  } else {
-    causes.push({ label: "The mechanism", value: "Digestive imbalance" });
-  }
+  const mechanism = hasSkinSignal(a)
+    ? "The skin–gut axis"
+    : a.symptoms.includes("gunky-ears")
+    ? "Yeast & gut balance"
+    : "Digestive imbalance";
   const triedCount = a.tried.filter((t) => t !== "nothing").length;
-  causes.push({
-    label: "Why it keeps coming back",
-    value: triedCount >= 2 ? "Surface fixes, not the cause" : "Untreated at the source",
-  });
-  causes.push({
-    label: "How long it's been building",
-    value:
-      a.duration === "gt1y"
-        ? "Over a year"
-        : a.duration === "6to12m"
-        ? "6–12 months"
-        : a.duration === "1to6m"
-        ? "1–6 months"
+  return [
+    { label: "Likely root cause", value: "Gut microbiome imbalance" },
+    { label: "The mechanism", value: mechanism },
+    {
+      label: "Why it keeps coming back",
+      value: triedCount >= 2 ? "Surface fixes, not the cause" : "Untreated at the source",
+    },
+    {
+      label: "How long it's been building",
+      value:
+        a.duration === "gt1y" ? "Over a year"
+        : a.duration === "6to12m" ? "6–12 months"
+        : a.duration === "1to6m" ? "1–6 months"
         : "Recent",
-  });
-  return causes;
+    },
+  ];
 }
 
 export function buildRecommendation(a: QuizAnswers): Recommendation {
-  const primaryId: SymptomTag = a.primary ?? a.symptoms[0] ?? "paw-licking";
-  const primary = symptomById(primaryId);
-  const score = gutScore(a);
+  const symptoms = a.symptoms.map(symptomById);
   const dog = a.dogName.trim() || "your dog";
+  const score = gutScore(a);
+  const list = joinNouns(symptoms.map((s) => s.noun));
+  const many = symptoms.length > 1;
   return {
-    primary,
+    symptoms,
     hero: PRODUCTS.probioPlus,
     upsell: hasSkinSignal(a) ? PRODUCTS.skinGutDuo : null,
-    proof: matchedProof(a, primaryId).slice(0, 6),
+    proof: matchedProof(a).slice(0, 6),
     smallDog: a.size === "toy" || a.size === "small",
     triedBefore: a.tried.some((t) => t !== "nothing"),
     dose: a.size ? DOSE_BY_SIZE[a.size] : "the right daily dose",
+    beforeAfterKind: beforeAfterKind(a),
     gutScore: score,
     rating: ratingFor(score),
-    verdict: `Based on ${dog}'s answers, their ${primary.eyebrow.toLowerCase()} is most likely being driven from the gut — and it's ${ratingFor(
-      score
-    ).toLowerCase()}.`,
+    verdict: `We looked at everything you told us about ${dog} — ${list} — and ${
+      many ? "they all point" : "it points"
+    } to one place: a gut that's ${ratingFor(score).toLowerCase()}.`,
     rootCauses: rootCausesFor(a),
   };
 }

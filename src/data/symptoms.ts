@@ -12,6 +12,7 @@ export interface Symptom {
   emoji: string;
   // Quiz card
   label: string; // multi-select option
+  noun: string; // short noun for natural lists, e.g. "paw licking"
   short: string; // one-line "the itch that…" descriptor
   // Lander
   eyebrow: string; // small kicker above the H1
@@ -33,6 +34,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "paw-licking",
     emoji: "🐾",
     label: "Licking or chewing his paws",
+    noun: "paw licking",
     short: "That wet, repetitive licking while you're trying to watch telly.",
     eyebrow: "Paw licking & chewing",
     headline: "Still licking his paws? It might not be his skin — it might be his gut.",
@@ -49,6 +51,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "itchy-skin",
     emoji: "🔴",
     label: "Itchy skin & scratching",
+    noun: "itchy skin",
     short: "The itch no cream, spray or vet visit could fix.",
     eyebrow: "Itchy, scratchy skin",
     headline: "The itch that no cream, spray or vet visit could fix.",
@@ -65,6 +68,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "gunky-ears",
     emoji: "👂",
     label: "Gunky or smelly ears",
+    noun: "gunky ears",
     short: "The head-shaking and the smell you can't get rid of.",
     eyebrow: "Gunky, smelly ears",
     headline: "Clean, clear ears in weeks — without another round of ear drops.",
@@ -85,6 +89,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "tummy",
     emoji: "💩",
     label: "Sensitive tummy / messy poos",
+    noun: "tummy troubles",
     short: "Sloppy poos, wind, and a tummy that never settles.",
     eyebrow: "Sensitive tummy",
     headline: "Firmer poos, calmer tummy, happier dog.",
@@ -101,6 +106,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "scooting",
     emoji: "🐕",
     label: "Scooting / anal gland trouble",
+    noun: "scooting",
     short: "The bum-shuffle across your carpet.",
     eyebrow: "Scooting & anal glands",
     headline: "Less scooting, settled glands, no more bum-shuffle across the carpet.",
@@ -116,6 +122,7 @@ export const SYMPTOMS: Symptom[] = [
     slug: "tear-staining",
     emoji: "✨",
     label: "Tear staining / weepy eyes",
+    noun: "tear staining",
     short: "The rusty stains under his eyes.",
     eyebrow: "Tear staining",
     headline: "Clearer eyes, less staining — the whole-dog glow-up owners keep noticing.",

@@ -6,6 +6,7 @@ import { StarRating } from "@/components/ui/StarRating";
 import { SYMPTOMS } from "@/data/symptoms";
 import type { SymptomTag } from "@/data/testimonials";
 import {
+  beforeAfterKind,
   emptyAnswers,
   SIZE_LABEL,
   type AgeBand,
@@ -96,18 +97,17 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "name" | "size" | "age" | "symptoms" | "primary"
+  | "name" | "size" | "age" | "symptoms"
   | "card-stat" | "stool" | "poo" | "wind" | "duration"
   | "card-beforeafter" | "tried" | "card-tried" | "diet";
 
 const QUESTION_KEYS: StepKey[] = [
-  "name", "size", "age", "symptoms", "primary",
+  "name", "size", "age", "symptoms",
   "stool", "poo", "wind", "duration", "tried", "diet",
 ];
 
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = ["name", "size", "age", "symptoms"];
-  if (a.symptoms.length > 1) seq.push("primary");
   seq.push("card-stat", "stool", "poo", "wind", "duration", "card-beforeafter", "tried");
   const triedExplainable = a.tried.some((t) => TRIED_EXPLAINERS[t]);
   if (triedExplainable) seq.push("card-tried");
@@ -127,7 +127,7 @@ export function QuizFunnel() {
 
   const next = () => {
     if (idx >= seq.length - 1) {
-      track("quiz_completed", { primary: a.primary ?? a.symptoms[0], symptoms: a.symptoms.length });
+      track("quiz_completed", { symptoms: a.symptoms.length });
       setPhase("analysing");
     } else setIdx((i) => i + 1);
   };
@@ -156,7 +156,6 @@ export function QuizFunnel() {
             value={a.age} onPick={(v) => { update({ age: v as AgeBand }); next(); }} />
         )}
         {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
-        {key === "primary" && <PrimaryStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "card-stat" && (
           <InfoCard eyebrow="Did you know?" title="80% of your dog's immune system lives in the gut."
             body={`That's why skin, ears and paws so often trace back to gut balance — and why we start there for ${dog}.`}
@@ -278,12 +277,10 @@ function NameStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Partial<Q
 function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
   const toggle = (id: SymptomTag) => {
     const has = a.symptoms.includes(id);
-    const symptoms = has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id];
-    const primary = a.primary && symptoms.includes(a.primary) ? a.primary : null;
-    update({ symptoms, primary: symptoms.length === 1 ? symptoms[0] : primary });
+    update({ symptoms: has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id] });
   };
   return (
-    <StepShell title="Which of these is your dog dealing with?" sub="Tick all that sound familiar — most dogs have more than one.">
+    <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar — we'll build the plan around all of it, not just one.">
       <div className="space-y-3">
         {SYMPTOMS.map((s) => (
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
@@ -291,20 +288,6 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
       </div>
       <StickyNext disabled={a.symptoms.length === 0} onNext={onNext}
         label={a.symptoms.length ? `Continue (${a.symptoms.length} selected)` : "Select at least one"} />
-    </StepShell>
-  );
-}
-
-function PrimaryStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
-  const chosen = SYMPTOMS.filter((s) => a.symptoms.includes(s.id));
-  return (
-    <StepShell title={`Which bothers ${dog} the most?`} sub="This is what we'll build the plan around.">
-      <div className="space-y-3">
-        {chosen.map((s) => (
-          <OptionCard key={s.id} active={a.primary === s.id} emoji={s.emoji} label={s.label} onClick={() => update({ primary: s.id })} />
-        ))}
-      </div>
-      <StickyNext disabled={!a.primary} onNext={onNext} label="Continue" />
     </StepShell>
   );
 }
@@ -341,8 +324,7 @@ function InfoCard({ eyebrow, title, body, onNext }: { eyebrow: string; title: st
 }
 
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
-  const primary = a.primary ?? a.symptoms[0] ?? "itchy-skin";
-  const isEars = primary === "gunky-ears";
+  const isEars = beforeAfterKind(a) === "ears";
   const img = isEars ? "/images/symptoms/gunky-ears-before-after.jpg" : "/images/symptoms/itchy-skin-before-after.jpg";
   const vertical = isEars; // ears asset is a vertical 2-panel; skin is side-by-side
   return (
