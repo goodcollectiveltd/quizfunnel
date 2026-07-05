@@ -8,7 +8,7 @@ link to goodforpets.co product pages).
 ```bash
 # create an empty repo on github.com first (e.g. GFP-Quiz-Funnel), then:
 git remote add origin https://github.com/<you>/GFP-Quiz-Funnel.git
-git push -u origin main   # (branch may be "master" — check with: git branch)
+git push -u origin master   # (branch may be "master" — check with: git branch)
 ```
 
 ## 2. Deploy (pick one — all free, all auto-deploy on every push)
