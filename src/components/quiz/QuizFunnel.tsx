@@ -18,6 +18,7 @@ import {
 } from "@/lib/recommend";
 import { Analysing } from "./Analysing";
 import { Result } from "./Result";
+import { track } from "@/lib/tracking";
 
 /* ------------------------------- options ------------------------------- */
 
@@ -125,12 +126,14 @@ export function QuizFunnel() {
   const dog = a.dogName.trim() || "your dog";
 
   const next = () => {
-    if (idx >= seq.length - 1) setPhase("analysing");
-    else setIdx((i) => i + 1);
+    if (idx >= seq.length - 1) {
+      track("quiz_completed", { primary: a.primary ?? a.symptoms[0], symptoms: a.symptoms.length });
+      setPhase("analysing");
+    } else setIdx((i) => i + 1);
   };
   const back = () => setIdx((i) => Math.max(0, i - 1));
 
-  if (phase === "hook") return <Hook onStart={() => setPhase("quiz")} />;
+  if (phase === "hook") return <Hook onStart={() => { track("quiz_start"); setPhase("quiz"); }} />;
   if (phase === "analysing") return <Analysing dog={dog} onDone={() => setPhase("result")} />;
   if (phase === "result") return <Result answers={a} />;
 

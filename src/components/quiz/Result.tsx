@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, type QuizAnswers } from "@/lib/recommend";
 import { symptomById } from "@/data/symptoms";
+import { track, withAttribution } from "@/lib/tracking";
+import { subscribeEmail } from "@/lib/subscribe";
 
 const VET_IMG = "/images/people/kishan.jpg";
 
@@ -19,6 +21,14 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     new Date(now.getTime() + days * 86_400_000).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
+
+  // Attribution-forwarded PDP links + funnel events
+  const heroUrl = withAttribution(rec.hero.pdpUrl);
+  const upsellUrl = rec.upsell ? withAttribution(rec.upsell.pdpUrl) : "#";
+  useEffect(() => {
+    track("Lead", { primary: rec.primary.id, product: rec.hero.name, gut_score: rec.gutScore });
+  }, [rec.primary.id, rec.hero.name, rec.gutScore]);
+  const onBuy = (product: string) => track("InitiateCheckout", { content_name: product });
 
   // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
   const ctaRef = useRef<HTMLAnchorElement>(null);
@@ -141,7 +151,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong> — no giant tablet to crush. Just open and mix into food.
               </p>
             )}
-            <a ref={ctaRef} href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
+            <a ref={ctaRef} href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.hero.name)}
               className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
               Start {dogPossessive} plan →
             </a>
@@ -160,7 +170,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 <p className="text-xs font-bold uppercase tracking-wide text-brand-red">Add extra support for {dog}</p>
                 <h3 className="mt-1 text-lg font-extrabold text-brand-ink">{rec.upsell.addOnLabel}</h3>
                 <p className="mt-1 text-sm text-brand-ink/70">{rec.upsell.addOnBlurb}</p>
-                <a href={rec.upsell.pdpUrl} target="_blank" rel="noopener noreferrer"
+                <a href={upsellUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.upsell!.name)}
                   className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4">
                   {rec.upsell.addOnLabel} →
                 </a>
@@ -210,7 +220,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
       {showSticky && (
         <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-brand-cream/95 backdrop-blur">
           <div className="container-page py-3">
-            <a href={rec.hero.pdpUrl} target="_blank" rel="noopener noreferrer"
+            <a href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.hero.name)}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
               Start {dogPossessive} plan →
             </a>
@@ -224,7 +234,12 @@ export function Result({ answers }: { answers: QuizAnswers }) {
 function EmailCapture({ dog }: { dog: string }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const submit = () => { if (email.includes("@")) setSent(true); };
+  const submit = async () => {
+    if (!email.includes("@")) return;
+    setSent(true); // optimistic — never block the user
+    const ok = await subscribeEmail(email, { dog_name: dog, source: "quiz" });
+    if (ok) track("CompleteRegistration", { dog_name: dog });
+  };
   if (sent) {
     return (
       <div className="mt-12 rounded-2xl bg-white p-5 text-center shadow-card">

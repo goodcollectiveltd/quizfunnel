@@ -28,16 +28,22 @@ Build settings for **all** of them: build command `npm run build`, output dir `d
      If it won't let you, move DNS to Cloudflare (free) and add the CNAME there.
 3. SSL is issued automatically by the host. Live in a few minutes.
 
-## Before / around launch — recommended
-- **Meta Pixel + UTM/`fbclid` passthrough** — add the Pixel and pass click IDs through
-  to the Shopify CTA so ad conversions attribute. (Not built yet.)
-- **Email capture** — the optional "email me the plan" field is UI-only; wire it to
-  Klaviyo/Shopify. (See TODO in `src/components/quiz/Result.tsx`.)
+## Tracking, email & analytics — BUILT, just add keys
+All of this is wired and driven by env vars (see `.env.example`). With no keys set it's a
+safe no-op. Add the keys in your host's **Environment Variables** and redeploy to switch on:
+
+- **Meta Pixel** (`VITE_META_PIXEL_ID`) — fires `PageView`, `quiz_start`, `quiz_completed`,
+  `Lead` (result reached), `InitiateCheckout` (PDP click) and `CompleteRegistration` (email).
+- **Click-ID passthrough** — automatic. `utm_*`, `fbclid`, `gclid`, `_fbp`/`_fbc` are captured
+  and **appended to the Shopify PDP links**, so ad conversions attribute correctly. (No key needed.)
+- **GA4** (`VITE_GA4_ID`) — mirrors the same events to Google Analytics.
+- **Email capture → Klaviyo** (`VITE_KLAVIYO_PUBLIC_KEY` + `VITE_KLAVIYO_LIST_ID`) — the
+  optional "email me the plan" field subscribes finishers to your list.
+
+## Still to confirm (content, not code)
 - **Guarantee wording** — the result promises a 90-day money-back guarantee; confirm it
   matches your actual returns policy.
-- **Omega PDP handle** — `src/data/products.ts` still has a placeholder for Omega (unused
-  in the UI today).
-- **Analytics** — consider GA4 or the host's analytics for funnel drop-off.
+- **Omega PDP handle** — `src/data/products.ts` has a placeholder for Omega (unused in the UI today).
 
 ## Local dev
 ```bash
