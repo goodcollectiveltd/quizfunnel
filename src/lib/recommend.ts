@@ -98,6 +98,9 @@ export interface Recommendation {
   verdict: string;
   rootCauses: RootCause[];
   signals: string[]; // the concerning signs we detected — evidence for the diagnosis
+  ageNote: string | null; // puppy / senior framing, tailored to the dog
+  dietNote: string | null; // reflects their feeding back at them
+  benefits: string[]; // symptom-matched outcomes — "what better looks like"
 }
 
 const SKIN_SYMPTOMS: SymptomTag[] = ["itchy-skin", "paw-licking"];
@@ -206,6 +209,52 @@ function rootCausesFor(a: QuizAnswers): RootCause[] {
   ];
 }
 
+/** Age-tailored line for the recommendation — puppy/senior get a specific angle. */
+function ageNoteFor(a: QuizAnswers, dog: string): string | null {
+  if (a.age === "puppy")
+    return `Starting young means you're building ${dog}'s gut foundation early — before small issues get a chance to settle in.`;
+  if (a.age === "senior")
+    return `For a senior like ${dog}, gentle daily gut support is easy to keep up — and it works on digestion, coat and everyday comfort together.`;
+  return null;
+}
+
+/** Reflects the owner's feeding choice back at them. */
+function dietNoteFor(a: QuizAnswers, dog: string): string | null {
+  switch (a.diet) {
+    case "raw":
+      return `Given ${dog}'s raw/fresh diet, a live probiotic is the natural partner — it helps the gut make the most of that fresh food.`;
+    case "kibble":
+      return `Kibble-fed dogs especially miss out on live bacteria and prebiotics — dry food just doesn't carry them.`;
+    case "wet":
+      return `Wet food is gentle but low on live cultures, so a daily probiotic fills the gap.`;
+    case "mix":
+      return `With a mixed diet, a steady daily probiotic gives ${dog}'s gut a consistent baseline.`;
+    default:
+      return null;
+  }
+}
+
+const BENEFIT_BY_SYMPTOM: Partial<Record<SymptomTag, string>> = {
+  "paw-licking": "Less licking and chewing — calmer paws",
+  "itchy-skin": "Less scratching, calmer skin",
+  "gunky-ears": "Cleaner, fresher ears",
+  tummy: "Firmer poos and a settled tummy",
+  scooting: "Less scooting, settled glands",
+  "tear-staining": "Brighter eyes, less staining",
+};
+
+/** Symptom-matched outcomes — the "what better could look like" framing. */
+function benefitsFor(a: QuizAnswers): string[] {
+  const out: string[] = [];
+  a.symptoms.forEach((id) => {
+    const b = BENEFIT_BY_SYMPTOM[id];
+    if (b) out.push(b);
+  });
+  if (a.coat === "dull") out.push("A softer, shinier coat");
+  if (a.energy === "low") out.push("More energy and a brighter mood");
+  return out.slice(0, 4);
+}
+
 export function buildRecommendation(a: QuizAnswers): Recommendation {
   const symptoms = a.symptoms.map(symptomById);
   const dog = a.dogName.trim() || "your dog";
@@ -213,10 +262,13 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
   const signals = signalsFor(a);
   const list = joinNouns(signals.length ? signals : symptoms.map((s) => s.noun));
   const many = signals.length > 1;
+  // Skin-led cases lead with the Skin & Gut Duo (Probio+ + Omega); it already
+  // contains everything, so there's no separate upsell. Gut-only cases lead with Probio+.
+  const skin = hasSkinSignal(a);
   return {
     symptoms,
-    hero: PRODUCTS.probioPlus,
-    upsell: hasSkinSignal(a) ? PRODUCTS.skinGutDuo : null,
+    hero: skin ? PRODUCTS.skinGutDuo : PRODUCTS.probioPlus,
+    upsell: null,
     proof: matchedProof(a).slice(0, 6),
     smallDog: a.size === "toy" || a.size === "small",
     triedBefore: a.tried.some((t) => t !== "nothing"),
@@ -229,6 +281,9 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
     } to one place: a gut that's ${ratingFor(score).toLowerCase()}.`,
     rootCauses: rootCausesFor(a),
     signals,
+    ageNote: ageNoteFor(a, dog),
+    dietNote: dietNoteFor(a, dog),
+    benefits: benefitsFor(a),
   };
 }
 

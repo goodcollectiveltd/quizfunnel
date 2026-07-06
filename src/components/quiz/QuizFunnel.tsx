@@ -108,24 +108,28 @@ const SPEND: { id: Spend; label: string }[] = [
 
 const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   antibiotics: {
-    title: "Antibiotics can make it worse",
-    body: "Antibiotics kill both the bad AND the good gut bacteria — which can leave yeast and skin flare-ups worse once the course ends. Rebuilding the gut is what's missing.",
+    title: "Antibiotics wipe out the good too",
+    body: "They kill bad AND good bacteria — a sledgehammer where you need a scalpel. When the course ends, the bad bugs often surge back, because there's no good bacteria left to keep them in check. The gut needs rebuilding, not bombing.",
   },
   steroids: {
-    title: "Steroids mask, they don't fix",
-    body: "Steroids and Apoquel calm the immune response, but the moment they stop, the itch is usually back — because the driver in the gut was never addressed.",
+    title: "Steroids & Apoquel just mask it",
+    body: "They quieten the immune response, so the itch calms — but the moment they stop, it's usually back, because the driver in the gut was never addressed. A band-aid on a leaky pipe.",
   },
   topical: {
-    title: "Creams treat the surface",
+    title: "Creams treat the surface only",
     body: "Sprays and shampoos work on the skin. If it keeps coming back, the cause is almost always internal — which is why it never fully clears.",
   },
   chews: {
-    title: "Baked chews are (mostly) dead on arrival",
-    body: "Most chews are baked — and the heat kills the live bacteria before they ever reach the gut. Ours are cold-pressed, so 5 billion actually survive.",
+    title: "Baked chews are mostly dead on arrival",
+    body: "Most chews are baked — the heat kills the live bacteria before they reach the gut, and they're often padded with fillers and sugars that feed the bad bugs. Ours are cold-pressed, so 5 billion actually survive.",
+  },
+  diet: {
+    title: "A special diet alone can't rebuild the gut",
+    body: "Changing food can ease things for a while, but without restoring the balance of good bacteria, the same issues resurface. It's clean water poured into a polluted pool — the imbalance is still there.",
   },
   probiotic: {
     title: "Not all probiotics reach the gut",
-    body: "Strength and format matter. Many are underdosed or heat-treated. Ours is 5 billion live CFU per capsule, cold-pressed and human-grade.",
+    body: "Many are underdosed or heat-treated and pass straight through. Strength and format matter — ours is 5 billion live CFU per capsule, cold-pressed and human-grade.",
   },
 };
 
@@ -134,8 +138,8 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 type StepKey =
   | "size" | "age" | "symptoms" | "card-stat"
   | "diet" | "treats" | "card-beforeafter"
-  | "breath" | "coat" | "energy" | "grass" | "wind" | "stool"
-  | "duration" | "tried" | "tried-outcome" | "tried-spend" | "card-tried";
+  | "breath" | "coat" | "energy" | "card-midsignals" | "grass" | "wind" | "stool"
+  | "duration" | "tried" | "tried-outcome" | "tried-spend" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
   "size", "age", "symptoms", "diet", "treats",
@@ -147,12 +151,19 @@ function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
     "size", "age", "symptoms", "card-stat",
     "diet", "treats", "card-beforeafter",
-    "breath", "coat", "energy", "grass", "wind", "stool",
+    // A proof/progress breather splits the six gut-signal questions 3-and-3.
+    "breath", "coat", "energy", "card-midsignals", "grass", "wind", "stool",
     "duration", "tried",
   ];
-  // If they've tried something, dig into how it went before the explainer.
-  if (a.tried.some((t) => t !== "nothing")) seq.push("tried-outcome", "tried-spend");
-  if (a.tried.some((t) => TRIED_EXPLAINERS[t])) seq.push("card-tried");
+  const triedSomething = a.tried.some((t) => t !== "nothing");
+  if (triedSomething) {
+    // If they've tried something, dig into how it went, then disarm it.
+    seq.push("tried-outcome", "tried-spend");
+    if (a.tried.some((t) => TRIED_EXPLAINERS[t])) seq.push("card-tried");
+  } else if (a.tried.includes("nothing")) {
+    // First-timers get a positive "you're starting at the source" reframe instead.
+    seq.push("card-firsttimer");
+  }
   return seq;
 }
 
@@ -250,6 +261,8 @@ export function QuizFunnel() {
             options={DURATION} value={a.duration} onPick={(v) => { update({ duration: v as Duration }); next(); }} />
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
+        {key === "card-midsignals" && <MidSignalsCard dog={dog} onNext={next} />}
+        {key === "card-firsttimer" && <FirstTimerCard dog={dog} onNext={next} />}
         {key === "tried" && <TriedStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "tried-outcome" && (
           <SingleStep title={`Did any of it actually work for ${dog}?`} eyebrow="What you've tried"
@@ -260,7 +273,7 @@ export function QuizFunnel() {
             rationale="Vet visits, meds, chews, special food — it adds up fast."
             options={SPEND} value={a.spend} onPick={(v) => { update({ spend: v as Spend }); next(); }} />
         )}
-        {key === "card-tried" && <TriedExplainerCard a={a} onNext={next} />}
+        {key === "card-tried" && <TriedExplainerCard a={a} dog={dog} onNext={next} />}
       </main>
     </div>
   );
@@ -411,13 +424,14 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
   );
 }
 
-function TriedExplainerCard({ a, onNext }: { a: QuizAnswers; onNext: () => void }) {
+function TriedExplainerCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
   const explainers = a.tried.map((t) => TRIED_EXPLAINERS[t]).filter(Boolean).slice(0, 2);
   return (
     <div className="animate-fade-up pt-6">
       <div className="text-center">
         <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Here's the thing…</span>
-        <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">No wonder it hasn't stuck.</h1>
+        <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">No wonder it hasn't stuck for {dog}.</h1>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-brand-ink/60">It's not that you didn't try hard enough — it's that these couldn't fix what's actually going on.</p>
       </div>
       <div className="mt-6 space-y-4">
         {explainers.map((e) => (
@@ -428,6 +442,36 @@ function TriedExplainerCard({ a, onNext }: { a: QuizAnswers; onNext: () => void 
         ))}
       </div>
       <div className="mt-8"><Button onClick={onNext} className="w-full">Show me what actually works →</Button></div>
+    </div>
+  );
+}
+
+function MidSignalsCard({ dog, onNext }: { dog: string; onNext: () => void }) {
+  return (
+    <div className="animate-fade-up pt-6 text-center">
+      <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're over halfway</span>
+      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">These little signs are the real clues.</h1>
+      <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
+        Breath, coat, energy — on their own they're easy to brush off. Together they show us exactly where {dog}'s gut balance is. A few more and we'll have the full picture.
+      </p>
+      <div className="mx-auto mt-6 flex max-w-xs flex-col items-center gap-2 rounded-2xl bg-white p-4 shadow-card">
+        <StarRating />
+        <p className="text-sm font-semibold text-brand-ink/70">Trusted by 10,000+ UK dog owners</p>
+      </div>
+      <div className="mt-7"><Button onClick={onNext} className="w-full max-w-xs">Keep going →</Button></div>
+    </div>
+  );
+}
+
+function FirstTimerCard({ dog, onNext }: { dog: string; onNext: () => void }) {
+  return (
+    <div className="animate-fade-up pt-6 text-center">
+      <span className="rounded-full bg-brand-sky/25 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-ink">Good news</span>
+      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">Starting fresh is actually the smart move.</h1>
+      <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
+        Most owners spend months on symptom treatments before anyone mentions the gut. Beginning at the root cause means {dog} skips the trial-and-error — you're not undoing damage from things that never worked.
+      </p>
+      <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Show me {dog}'s plan →</Button></div>
     </div>
   );
 }

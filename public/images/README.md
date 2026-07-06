@@ -30,6 +30,18 @@ Suggested: add `image?: string` (OPTIONAL) to the `Symptom` interface (`src/data
 |---|---|
 | `/images/people/kishan.jpg` | Kishan (vet), 4:5 portrait — for a "recommended by our vet" trust strip |
 
+## Result-page product hero + UGC wall
+Cropped from `company-context/image-bank/` on 6 Jul 2026. Live on the **Result page**.
+| Web path | Shows | Used for |
+|---|---|---|
+| `/images/products/probio-sprinkle.jpg` | Capsule sprinkling into a food bowl, red bg (photoshoot `Probiotic-5`) | Recommendation card hero (`Product.heroImage`) |
+| `/images/ugc/grid-dachshund.jpg` | Dachshund + Probiotic tub on grass | "Join thousands of UK dogs" social-proof wall |
+| `/images/ugc/grid-golden.jpg` | Golden retriever, hand holding the tub | social-proof wall |
+| `/images/ugc/grid-beagle.jpg` | Beagle nosing the tub | social-proof wall |
+| `/images/ugc/grid-trio.jpg` | Three dogs + Joint Support & Probiotic tubs | social-proof wall |
+
+UGC consent: **confirmed** by Will (all image-bank UGC is consented). `grid-cavapoo.jpg` and `happy-dog.jpg` are unused spares.
+
 ## Notes
 - Need a different crop/aspect for a placement? Re-run `company-context/image-bank/_tools/crop.py`
   against the original in the bank — originals are full-res and untouched.

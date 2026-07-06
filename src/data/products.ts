@@ -25,6 +25,7 @@ export interface Product {
   supports: string;
   pdpUrl: string;
   image: string; // transparent PNG cutout — /images/products/<key>.png
+  heroImage?: string; // rich lifestyle/product shot for the recommendation-card hero
   contents: string[];
   // Upsell framing (used when a product is offered as an add-on, not the hero)
   addOnLabel?: string; // e.g. "Add Omega 3-6-9"
@@ -41,6 +42,7 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     supports: "gut health, digestion and everyday comfort",
     pdpUrl: PDP_URLS.probioPlus,
     image: "/images/products/probioPlus.png",
+    heroImage: "/images/products/probio-sprinkle.jpg", // capsule sprinkling into food bowl, red bg
     contents: [
       "5 live probiotic strains + 6 digestive enzymes",
       "Prebiotic inulin from chicory root",
@@ -76,6 +78,7 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     supports: "gut health plus skin and coat condition",
     pdpUrl: PDP_URLS.skinGutDuo,
     image: "/images/products/skinGutDuo.png",
+    heroImage: "/images/products/skin-gut-duo-hero.jpg", // Probio+ & Omega tubs on red
     contents: [
       "Everything in Probio+ (5 strains, enzymes, prebiotic)",
       "Omega 3-6-9 for skin, coat and general condition",

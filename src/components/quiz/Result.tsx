@@ -5,8 +5,17 @@ import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
+import { CHECKOUT, heroCommerceFor, tierCartUrl, deliveryLabel, heroCheckoutReady } from "@/lib/commerce";
 
 const VET_IMG = "/images/people/kishan.jpg";
+
+// Real-customer photos (product visible) for the social-proof wall on the result page.
+const UGC_WALL = [
+  "/images/ugc/grid-dachshund.jpg",
+  "/images/ugc/grid-golden.jpg",
+  "/images/ugc/grid-beagle.jpg",
+  "/images/ugc/grid-trio.jpg",
+];
 
 export function Result({ answers }: { answers: QuizAnswers }) {
   const rec = buildRecommendation(answers);
@@ -20,9 +29,19 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
 
-  // Attribution-forwarded PDP links + funnel events
-  const heroUrl = withAttribution(rec.hero.pdpUrl);
-  const upsellUrl = rec.upsell ? withAttribution(rec.upsell.pdpUrl) : "#";
+  // Direct-to-cart checkout — product-aware: the hero may be Probio+ (gut) or the
+  // Skin & Gut Duo (skin), each with its own tiers, prices and Loop plans.
+  const [subscribe, setSubscribe] = useState(CHECKOUT.defaultSubscribe);
+  const [tierIdx, setTierIdx] = useState(CHECKOUT.defaultTierIndex);
+  const hc = heroCommerceFor(rec.hero.key);
+  const tiers = hc?.tiers ?? [];
+  const tier = tiers[tierIdx] ?? tiers[0] ?? null;
+  const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
+  const heroUrl = hc && tier ? (tierCartUrl(hc, tier, subscribe, answers.size) ?? heroPdpUrl) : heroPdpUrl;
+  const cadence = hc && tier ? deliveryLabel(hc, answers.size, tier.qty) : null;
+  // Show the subscribe/one-time toggle whenever we have both price sets.
+  const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
+  const directReady = heroCheckoutReady(hc);
   useEffect(() => {
     track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore });
   }, [answers.symptoms, rec.hero.name, rec.gutScore]);
@@ -130,6 +149,16 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <h2 className="mt-2 text-2xl font-extrabold leading-tight">
             Most owners see the first big change within <span className="text-brand-sky">8 weeks</span> — by {etaDate}.
           </h2>
+          {rec.benefits.length > 0 && (
+            <div className="mt-4">
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-sky">What better could look like for {dog}</p>
+              <ul className="mt-2 grid gap-1.5 sm:grid-cols-2">
+                {rec.benefits.map((b) => (
+                  <li key={b} className="flex items-center gap-2 text-[15px] text-white/90"><span className="text-brand-sky">✓</span>{b}</li>
+                ))}
+              </ul>
+            </div>
+          )}
           <svg viewBox="0 0 320 180" className="mt-5 w-full" role="img" aria-label={`Projected improvement for ${dog} over 90 days`}>
             <defs>
               <linearGradient id="proj-area" x1="0" y1="0" x2="0" y2="1">
@@ -184,13 +213,20 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
             {dogPossessive} recommended plan
           </div>
+          {/* Product hero — the sprinkle-into-food shot from the PDP */}
+          <img src={rec.hero.heroImage ?? rec.hero.image} alt={`${rec.hero.name} sprinkled into a food bowl`} className="block aspect-square w-full object-cover" />
           <div className="p-6">
-            <img src={rec.hero.image} alt={rec.hero.name} className="mx-auto mb-4 h-44 w-auto object-contain drop-shadow-md" />
             <h2 className="text-center text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
             <p className="mt-1 text-center font-semibold text-brand-red">{rec.hero.tagline}</p>
             <p className="mx-auto mt-3 max-w-xs rounded-xl bg-brand-cream p-2 text-center text-sm font-semibold text-brand-ink">
               For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}
             </p>
+            {(rec.dietNote || rec.ageNote) && (
+              <div className="mx-auto mt-3 max-w-sm space-y-1.5">
+                {rec.dietNote && <p className="flex gap-2 text-sm text-brand-ink/70"><span className="text-brand-red">✓</span>{rec.dietNote}</p>}
+                {rec.ageNote && <p className="flex gap-2 text-sm text-brand-ink/70"><span className="text-brand-red">✓</span>{rec.ageNote}</p>}
+              </div>
+            )}
             <ul className="mt-4 space-y-2">
               {rec.hero.contents.map((c) => (
                 <li key={c} className="flex gap-2 text-[15px] text-brand-ink/80"><span className="text-brand-red">✓</span>{c}</li>
@@ -201,38 +237,84 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong> — no giant tablet to crush. Just open and mix into food.
               </p>
             )}
-            <a ref={ctaRef} href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.hero.name)}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-              Start {dogPossessive} plan →
-            </a>
-            <p className="mt-3 text-center text-xs text-brand-ink/50">
-              Subscribe &amp; save — pause or cancel anytime · Most orders arrive in 2–3 working days
-            </p>
-          </div>
-        </div>
+            {/* Buy box — plan toggle → quantity tiers → one-tap direct-to-cart */}
+            <div className="mt-6">
+              {showPlanToggle && (
+                <div className="grid grid-cols-2 gap-1 rounded-full bg-brand-ink/5 p-1" role="tablist" aria-label="Purchase type">
+                  <button type="button" role="tab" aria-selected={subscribe} onClick={() => setSubscribe(true)}
+                    className={`rounded-full py-2 text-sm font-bold transition-all ${subscribe ? "bg-brand-red text-white shadow" : "text-brand-ink/60"}`}>
+                    Subscribe &amp; Save
+                  </button>
+                  <button type="button" role="tab" aria-selected={!subscribe} onClick={() => setSubscribe(false)}
+                    className={`rounded-full py-2 text-sm font-bold transition-all ${!subscribe ? "bg-brand-red text-white shadow" : "text-brand-ink/60"}`}>
+                    One-time
+                  </button>
+                </div>
+              )}
 
-        {/* Upsell */}
-        {rec.upsell && (
-          <div className="mt-4 rounded-3xl border-2 border-dashed border-brand-red/40 bg-white/60 p-5">
-            <div className="flex items-start gap-3">
-              <img src={rec.upsell.image} alt={rec.upsell.name} className="h-16 w-16 shrink-0 object-contain drop-shadow" />
-              <div className="flex-1">
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-red">Add extra support for {dog}</p>
-                <h3 className="mt-1 text-lg font-extrabold text-brand-ink">{rec.upsell.addOnLabel}</h3>
-                <p className="mt-1 text-sm text-brand-ink/70">{rec.upsell.addOnBlurb}</p>
-                <a href={upsellUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.upsell!.name)}
-                  className="mt-3 inline-flex items-center gap-1 text-sm font-bold text-brand-red underline underline-offset-4">
-                  {rec.upsell.addOnLabel} →
-                </a>
+              <div className="mt-3 space-y-2.5" role="radiogroup" aria-label="Choose quantity">
+                {tiers.map((t, i) => {
+                  const selected = i === tierIdx;
+                  const price = subscribe ? t.subPrice : t.oncePrice;
+                  return (
+                    <button key={t.label} type="button" role="radio" aria-checked={selected} onClick={() => setTierIdx(i)}
+                      className={`relative flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3.5 text-left transition-all ${selected ? "border-brand-red shadow-card" : "border-brand-ink/15 hover:border-brand-red/30"}`}>
+                      {t.badge && (
+                        <span className="absolute -top-2.5 right-3 rounded-full bg-brand-red px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">{t.badge}</span>
+                      )}
+                      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 text-[11px] ${selected ? "border-brand-red bg-brand-red text-white" : "border-brand-ink/25"}`}>{selected && "✓"}</span>
+                      <img src={rec.hero.image} alt="" aria-hidden className="h-10 w-10 shrink-0 object-contain" />
+                      <span className="flex-1 font-extrabold text-brand-ink">{t.label}</span>
+                      <span className="text-right">
+                        <span className="block text-lg font-extrabold text-brand-ink">{price}</span>
+                        {t.compareAt && <span className="block text-xs font-semibold text-brand-ink/40 line-through">{t.compareAt}</span>}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
+
+              {subscribe && (
+                <ul className="mt-3 grid gap-1 text-xs font-semibold text-brand-ink/70">
+                  {cadence && (
+                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dog}'s daily dose, so you never run out or overstock</li>
+                  )}
+                  <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> {CHECKOUT.subscription.firstOrderOff}% off your first order, then {CHECKOUT.subscription.futureOff}% off every future order</li>
+                  {CHECKOUT.subscription.freeShipping && <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Free shipping for life · pause or cancel anytime</li>}
+                </ul>
+              )}
+
+              <a ref={ctaRef} href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(`${rec.hero.name}${tier ? ` · ${tier.label}` : ""} · ${subscribe ? "sub" : "once"}`)}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
+                {directReady && tier ? `Add ${tier.label} to basket →` : `Start ${dogPossessive} plan →`}
+              </a>
+              <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-xs text-brand-ink/50">
+                <span>🛡️ 90-day money-back guarantee</span>
+                <span aria-hidden>·</span>
+                <span>🚚 2–3 working days</span>
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
         {/* Flexibility reassurance (guarantee lives in the projection above) */}
         <p className="mt-5 text-center text-sm font-semibold text-brand-ink/60">
           Subscribe &amp; save · pause or cancel anytime · backed by our 90-day results guarantee
         </p>
+
+        {/* Real-customer photo wall — social proof from actual owners */}
+        <section className="mt-12">
+          <h3 className="text-center text-xl font-extrabold text-brand-ink">Join thousands of UK dogs on Good for Pets</h3>
+          <p className="mx-auto mt-2 max-w-md text-center text-sm text-brand-ink/60">
+            Real dogs, real homes, sent in by their owners — {dog} would be in good company.
+          </p>
+          <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+            {UGC_WALL.map((src) => (
+              <img key={src} src={src} alt="A real customer's dog with Good for Pets" loading="lazy"
+                className="aspect-square w-full rounded-2xl object-cover shadow-card" />
+            ))}
+          </div>
+        </section>
 
         {/* Matched proof */}
         {rec.proof.length > 0 && (
@@ -272,7 +354,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="container-page py-3">
             <a href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.hero.name)}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-              Start {dogPossessive} plan →
+              {directReady ? "Add to basket →" : `Start ${dogPossessive} plan →`}
             </a>
           </div>
         </div>

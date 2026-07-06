@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 
-const STEPS = [
-  "Analysing the symptoms",
-  "Reading the gut signals",
-  "Cross-referencing 10,000+ dogs",
-  "Building the plan",
+const stepsFor = (dog: string) => [
+  `Analysing ${dog}'s symptoms`,
+  `Reading ${dog}'s gut signals`,
+  `Scoring ${dog}'s gut balance`,
+  `Matching ${dog} to 10,000+ similar dogs`,
+  `Building ${dog}'s personalised plan`,
 ];
 
 export function Analysing({ dog, onDone }: { dog: string; onDone: () => void }) {
+  const STEPS = stepsFor(dog);
   const [done, setDone] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setDone((d) => Math.min(d + 1, STEPS.length)), 700);
-    const finish = setTimeout(onDone, 3200);
+    // Paced to feel like a genuine, custom calculation (~5s) rather than an instant jump.
+    const t = setInterval(() => setDone((d) => Math.min(d + 1, STEPS.length)), 900);
+    const finish = setTimeout(onDone, 5000);
     return () => {
       clearInterval(t);
       clearTimeout(finish);
