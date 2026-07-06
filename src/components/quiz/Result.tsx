@@ -5,7 +5,7 @@ import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
-import { CHECKOUT, heroCommerceFor, tierCartUrl, deliveryLabel, heroCheckoutReady } from "@/lib/commerce";
+import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, heroCheckoutReady } from "@/lib/commerce";
 
 const VET_IMG = "/images/people/kishan.jpg";
 
@@ -37,11 +37,18 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const tiers = hc?.tiers ?? [];
   const tier = tiers[tierIdx] ?? tiers[0] ?? null;
   const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
-  const heroUrl = hc && tier ? (tierCartUrl(hc, tier, subscribe, answers.size) ?? heroPdpUrl) : heroPdpUrl;
+  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size) : null;
   const cadence = hc && tier ? deliveryLabel(hc, answers.size, tier.qty) : null;
   // Show the subscribe/one-time toggle whenever we have both price sets.
   const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
   const directReady = heroCheckoutReady(hc);
+  // Add to the Shopify cart via a first-party form POST (so the subscription plan
+  // attaches), opening the store in a new tab so the result page stays put.
+  const goToCheckout = () => {
+    onBuy(`${rec.hero.name}${tier ? ` · ${tier.label}` : ""} · ${subscribe ? "sub" : "once"}`);
+    if (heroAdd) submitCartAdd(heroAdd, { target: "_blank" });
+    else window.open(heroPdpUrl, "_blank", "noopener");
+  };
   useEffect(() => {
     track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore });
   }, [answers.symptoms, rec.hero.name, rec.gutScore]);
@@ -74,7 +81,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   };
 
   // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
-  const ctaRef = useRef<HTMLAnchorElement>(null);
+  const ctaRef = useRef<HTMLButtonElement>(null);
   const [showSticky, setShowSticky] = useState(false);
   useEffect(() => {
     const onScroll = () => {
@@ -284,10 +291,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 </ul>
               )}
 
-              <a ref={ctaRef} href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(`${rec.hero.name}${tier ? ` · ${tier.label}` : ""} · ${subscribe ? "sub" : "once"}`)}
+              <button ref={ctaRef} type="button" onClick={goToCheckout}
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
                 {directReady && tier ? `Add ${tier.label} to basket →` : `Start ${dogPossessive} plan →`}
-              </a>
+              </button>
               <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-xs text-brand-ink/50">
                 <span>🛡️ 90-day money-back guarantee</span>
                 <span aria-hidden>·</span>
@@ -352,10 +359,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
       {showSticky && (
         <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-brand-cream/95 backdrop-blur">
           <div className="container-page py-3">
-            <a href={heroUrl} target="_blank" rel="noopener noreferrer" onClick={() => onBuy(rec.hero.name)}
+            <button type="button" onClick={goToCheckout}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
               {directReady ? "Add to basket →" : `Start ${dogPossessive} plan →`}
-            </a>
+            </button>
           </div>
         </div>
       )}

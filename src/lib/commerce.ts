@@ -11,9 +11,14 @@
  * 20% off recurring, free shipping for life on subscription).
  */
 
-import { STORE_ORIGIN, type ProductKey } from "@/data/products";
+import { type ProductKey } from "@/data/products";
 import type { DogSize } from "@/lib/recommend";
-import { withAttribution } from "@/lib/tracking";
+import { getAttribution } from "@/lib/tracking";
+
+// Cart actions must hit the store's CANONICAL domain (apex). www.goodforpets.co
+// 301-redirects to it, and that redirect drops the freshly-set cart cookie — so
+// posting to www would land the buyer on an empty cart. Post to the apex directly.
+const CART_ORIGIN = "https://goodforpets.co";
 
 /* ── Frequency model — a tub/pack is 90 probiotic capsules; daily use scales with
  * size, so the delivery interval is sized to how long the purchase lasts. Rounded
@@ -124,16 +129,54 @@ export function deliveryLabel(hc: HeroCommerce, size: DogSize | null, qty: numbe
   return `every ${Math.round(days / 30)} months`;
 }
 
-/** Build the cart-permalink URL for a hero tier. null → caller falls back to the PDP. */
-export function tierCartUrl(hc: HeroCommerce, tier: PriceTier, subscribe: boolean, size: DogSize | null): string | null {
+export interface CartAdd {
+  variantId: string;
+  quantity: number;
+  sellingPlanId?: string; // present when subscribing
+  returnTo: string; // relative path to land on after the add (with discount/attribution)
+}
+
+/**
+ * Work out the /cart/add payload for a hero tier. Returns null → caller falls back
+ * to the PDP. NOTE: we use a form POST to /cart/add (not a `/cart/{id}:{q}` permalink)
+ * because Shopify silently DROPS `selling_plan` on cart permalinks — the subscription
+ * (and its discount) never attaches. The add endpoint honours it.
+ */
+export function tierCartAdd(hc: HeroCommerce, tier: PriceTier, subscribe: boolean, size: DogSize | null): CartAdd | null {
   if (!tier.variantId) return null;
-  const url = new URL(`${STORE_ORIGIN}/cart/${tier.variantId}:1`);
-  if (subscribe) {
-    const plan = sellingPlanFor(hc, size, tier.qty);
-    if (plan) url.searchParams.set("selling_plan", plan);
-  }
-  if (CHECKOUT.discountCode) url.searchParams.set("discount", CHECKOUT.discountCode);
-  return withAttribution(url.toString());
+  const sellingPlanId = subscribe ? sellingPlanFor(hc, size, tier.qty) : undefined;
+  const params = new URLSearchParams();
+  if (CHECKOUT.discountCode) params.set("discount", CHECKOUT.discountCode);
+  for (const [k, v] of Object.entries(getAttribution())) params.set(k, v);
+  const qs = params.toString();
+  return { variantId: tier.variantId, quantity: 1, sellingPlanId, returnTo: qs ? `/cart?${qs}` : "/cart" };
+}
+
+/**
+ * Add the item to the Shopify cart via a first-party form POST on the store domain,
+ * so the selling plan (subscription + discount) actually attaches, then redirect to
+ * the cart. A cross-domain form submission is a plain navigation — no CORS issues.
+ */
+export function submitCartAdd(add: CartAdd, opts: { target?: string } = {}): void {
+  const form = document.createElement("form");
+  form.method = "POST";
+  form.action = `${CART_ORIGIN}/cart/add`;
+  form.acceptCharset = "UTF-8";
+  if (opts.target) form.target = opts.target;
+  const field = (name: string, value: string) => {
+    const i = document.createElement("input");
+    i.type = "hidden";
+    i.name = name;
+    i.value = value;
+    form.appendChild(i);
+  };
+  field("id", add.variantId);
+  field("quantity", String(add.quantity));
+  if (add.sellingPlanId) field("selling_plan", add.sellingPlanId);
+  field("return_to", add.returnTo);
+  document.body.appendChild(form);
+  form.submit();
+  window.setTimeout(() => form.remove(), 1000);
 }
 
 /** True once every tier has a variant id — i.e. direct checkout is live for this hero. */
