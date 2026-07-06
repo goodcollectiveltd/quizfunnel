@@ -12,9 +12,9 @@ import {
   type AgeBand,
   type DogSize,
   type Duration,
+  type Goal,
   type QuizAnswers,
   type Stool,
-  type Treats,
   type TriedOutcome,
 } from "@/lib/recommend";
 import { Analysing } from "./Analysing";
@@ -34,11 +34,23 @@ const DIET: { id: string; label: string }[] = [
   { id: "wet", label: "Wet / tinned food" },
   { id: "mix", label: "A mix" },
 ];
-const TREATS: { id: Treats; label: string }[] = [
-  { id: "rarely", label: "Rarely — the odd one" },
-  { id: "sometimes", label: "A few times a week" },
-  { id: "daily", label: "Daily — treats or table scraps" },
+// The emotional lead-in: they name the outcome they want, then the "you're in the
+// right place" card confirms it (Mars-Men desire → validation beat).
+const GOALS: { id: Goal; label: string; emoji: string }[] = [
+  { id: "skin", label: "Calm, itch-free skin & paws", emoji: "🐾" },
+  { id: "ears", label: "Clean, comfortable ears", emoji: "👂" },
+  { id: "tummy", label: "A settled tummy & firm poos", emoji: "💩" },
+  { id: "energy", label: "Their energy & spark back", emoji: "⚡" },
+  { id: "all", label: "Honestly — just my dog, happy again", emoji: "💛" },
 ];
+// One-liner the confirmation card echoes back, so it reflects what they just said.
+const GOAL_ECHO: Record<Goal, string> = {
+  skin: "Calm, itch-free skin is absolutely within reach.",
+  ears: "Clean, comfortable ears — yes, really.",
+  tummy: "A settled tummy and firm poos — that's the goal.",
+  energy: "That bright, playful spark can come back.",
+  all: "Your dog, back to themselves — that's exactly what this is for.",
+};
 // One "other signs" checklist replaces five separate single-select questions. Each
 // tick maps to the underlying answer field the scoring already uses (present → the
 // concerning value; left unticked → null, i.e. no signal, no deduction).
@@ -109,19 +121,20 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 
 type StepKey =
   | "size" | "age" | "symptoms" | "card-stat"
-  | "diet" | "treats" | "card-beforeafter"
+  | "diet" | "goal" | "card-beforeafter"
   | "signs" | "stool"
-  | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer" | "card-mission";
+  | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "size", "age", "symptoms", "diet", "treats",
+  "size", "age", "symptoms", "diet", "goal",
   "signs", "stool", "duration", "tried", "tried-outcome",
 ];
 
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
     "size", "age", "symptoms", "card-stat",
-    "diet", "treats", "card-beforeafter",
+    // They name the outcome they want, then the before/after card confirms it.
+    "diet", "goal", "card-beforeafter",
     "signs", "stool",
     "duration", "tried",
   ];
@@ -134,8 +147,6 @@ function buildSequence(a: QuizAnswers): StepKey[] {
     // First-timers get a positive "you're starting at the source" reframe instead.
     seq.push("card-firsttimer");
   }
-  // The 51% rescue mission lands last — a values beat as the plan is built.
-  seq.push("card-mission");
   return seq;
 }
 
@@ -195,10 +206,10 @@ export function QuizFunnel() {
             rationale="Diet is the single biggest thing shaping the gut microbiome — so we start here."
             options={DIET} value={a.diet} onPick={(v) => { update({ diet: v }); next(); }} />
         )}
-        {key === "treats" && (
-          <SingleStep title="How often do treats or table scraps sneak in?"
-            rationale="Rich, fatty treats and scraps can tip a balanced gut over the edge."
-            options={TREATS} value={a.treats} onPick={(v) => { update({ treats: v as Treats }); next(); }} />
+        {key === "goal" && (
+          <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
+            sub="There are no wrong answers — this is about the outcome you want back."
+            options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
         )}
         {key === "signs" && <SignsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "stool" && (
@@ -213,7 +224,6 @@ export function QuizFunnel() {
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
         {key === "card-firsttimer" && <FirstTimerCard dog={dog} onNext={next} />}
-        {key === "card-mission" && <MissionCard dog={dog} onNext={next} />}
         {key === "tried" && <TriedStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "tried-outcome" && (
           <SingleStep title={`Did any of it actually work for ${dog}?`} eyebrow="What you've tried"
@@ -371,6 +381,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here — and turned it around.</h1>
+      {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
           <img src={img} alt="A real dog before and after Good for Pets" className="block w-full" />
@@ -406,23 +417,6 @@ function TriedExplainerCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; o
         ))}
       </div>
       <div className="mt-8"><Button onClick={onNext} className="w-full">Show me what actually works →</Button></div>
-    </div>
-  );
-}
-
-function MissionCard({ dog, onNext }: { dog: string; onNext: () => void }) {
-  return (
-    <div className="animate-fade-up pt-6 text-center">
-      <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Why we do this</span>
-      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">Every order helps a rescue dog, too.</h1>
-      <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
-        Good for Pets gives <strong>51% of profits to animal rescue</strong>. So while we sort {dog}'s gut out, you're helping feed and care for dogs who've had the roughest start. That's the whole reason we exist.
-      </p>
-      <div className="mx-auto mt-6 flex max-w-xs items-center justify-center gap-3 rounded-2xl bg-brand-pink/25 p-4">
-        <span className="text-4xl font-extrabold leading-none text-brand-red">51%</span>
-        <span className="text-left text-sm font-semibold leading-tight text-brand-ink/75">of profits go<br />to rescue dogs</span>
-      </div>
-      <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Build {dog}'s plan →</Button></div>
     </div>
   );
 }

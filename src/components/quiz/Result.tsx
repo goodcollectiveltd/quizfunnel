@@ -60,6 +60,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     dog_size: answers.size,
     dog_age: answers.age,
     symptoms: rec.symptoms.map((s) => s.noun),
+    hoped_outcome: answers.goal,
     diet: answers.diet,
     treats: answers.treats,
     breath: answers.breath,
@@ -348,10 +349,22 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         </section>
 
+        {/* 51% mission — links out to the live Our Mission page (current totals live there) */}
+        <a href="https://goodforpets.co/pages/our-mission" target="_blank" rel="noopener noreferrer"
+          className="mt-10 flex items-center gap-4 rounded-3xl bg-brand-ink p-5 text-left text-white shadow-card transition-transform hover:scale-[0.99]">
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-red text-lg font-extrabold">51%</span>
+          <span className="flex-1">
+            <span className="block font-extrabold">Helping {dog} helps thousands more.</span>
+            <span className="mt-1 block text-sm text-white/75">
+              We give 51% of our profits to animal welfare — so every order supports rescue dogs around the world. See where it goes →
+            </span>
+          </span>
+        </a>
+
         <EmailCapture dog={dog} profile={profile} />
 
         <p className="mx-auto mt-10 max-w-md text-center text-sm text-brand-ink/60">
-          Not baked. Not dressed up as a treat. Just what actually works — with 51% of profits going to animal rescue.
+          Not baked. Not dressed up as a treat. Just what actually works.
         </p>
       </main>
 
