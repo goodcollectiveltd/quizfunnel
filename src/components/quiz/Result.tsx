@@ -5,6 +5,7 @@ import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
+import { fetchDonationTotal } from "@/lib/donation";
 import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, heroCheckoutReady } from "@/lib/commerce";
 
 const VET_IMG = "/images/people/kishan.jpg";
@@ -80,6 +81,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     gut_rating: rec.rating,
     quiz_source: "good-for-pets-quiz",
   };
+
+  // Live donation total from the published Google Sheet (null until loaded / if it fails).
+  const [donated, setDonated] = useState<string | null>(null);
+  useEffect(() => { fetchDonationTotal().then(setDonated); }, []);
 
   // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -358,6 +363,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             <span className="mt-1 block text-sm text-white/75">
               We give 51% of our profits to animal welfare — so every order supports rescue dogs around the world. See where it goes →
             </span>
+            {donated && <span className="mt-1.5 block text-sm font-bold text-brand-sky">{donated} donated so far</span>}
           </span>
         </a>
 
