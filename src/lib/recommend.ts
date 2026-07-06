@@ -13,6 +13,8 @@ export type Coat = "shiny" | "normal" | "dull";
 export type Energy = "bright" | "normal" | "low";
 export type Grass = "no" | "sometimes" | "often";
 export type Treats = "rarely" | "sometimes" | "daily";
+export type TriedOutcome = "none" | "temporary" | "faded" | "mixed";
+export type Spend = "lt50" | "50to200" | "200to500" | "gt500";
 
 export interface QuizAnswers {
   dogName: string;
@@ -32,6 +34,8 @@ export interface QuizAnswers {
   // Timeline + history
   duration: Duration | null;
   tried: string[];
+  triedOutcome: TriedOutcome | null; // did any of it work?
+  spend: Spend | null; // how much spent trying to fix it
 }
 
 export const emptyAnswers: QuizAnswers = {
@@ -49,6 +53,15 @@ export const emptyAnswers: QuizAnswers = {
   stool: null,
   duration: null,
   tried: [],
+  triedOutcome: null,
+  spend: null,
+};
+
+export const SPEND_LABEL: Record<Spend, string> = {
+  lt50: "under £50",
+  "50to200": "£50–£200",
+  "200to500": "£200–£500",
+  gt500: "£500+",
 };
 
 export const SIZE_LABEL: Record<DogSize, string> = {
@@ -145,6 +158,7 @@ function gutScore(a: QuizAnswers): number {
   if (a.diet === "kibble") s -= 2;
   const tried = a.tried.filter((t) => t !== "nothing").length;
   s -= Math.min(tried * 2, 8);
+  if (a.triedOutcome === "none") s -= 3; // tried lots, nothing worked = more entrenched
   return Math.max(20, Math.min(78, s));
 }
 

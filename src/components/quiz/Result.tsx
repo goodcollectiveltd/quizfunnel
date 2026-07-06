@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
-import { buildRecommendation, type QuizAnswers } from "@/lib/recommend";
+import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 
@@ -44,6 +44,8 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     stool_consistency: answers.stool,
     issue_duration: answers.duration,
     tried_before: answers.tried,
+    tried_outcome: answers.triedOutcome,
+    amount_spent: answers.spend,
     signals_detected: rec.signals,
     recommended_product: rec.hero.name,
     recommended_upsell: rec.upsell?.name ?? null,
@@ -155,11 +157,27 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         </section>
 
-        {rec.triedBefore && (
-          <p className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center text-[15px] text-brand-ink/80">
-            You've tried things before that let you down — you're not alone. "The only thing that has worked, and I feel like I've tried every potion." — Kim B.
-          </p>
-        )}
+        {rec.triedBefore && (() => {
+          const count = answers.tried.filter((t) => t !== "nothing").length;
+          const spend = answers.spend ? SPEND_LABEL[answers.spend] : null;
+          const outcome = {
+            none: "and seen no real difference",
+            temporary: "but it keeps coming straight back",
+            faded: "but the results never lasted",
+            mixed: "with mixed results at best",
+          }[answers.triedOutcome ?? "temporary"];
+          return (
+            <div className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center">
+              <p className="text-[15px] font-semibold text-brand-ink/85">
+                You've already tried {count} {count === 1 ? "thing" : "things"}
+                {spend ? ` and spent ${spend}` : ""} — {outcome}. You're not alone.
+              </p>
+              <p className="mt-2 text-sm italic text-brand-ink/70">
+                "The only thing that has worked — and I feel like I've tried every potion." — Kim B.
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Recommendation */}
         <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-card">

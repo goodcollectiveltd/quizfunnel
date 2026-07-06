@@ -17,8 +17,10 @@ import {
   type Energy,
   type Grass,
   type QuizAnswers,
+  type Spend,
   type Stool,
   type Treats,
+  type TriedOutcome,
   type Wind,
 } from "@/lib/recommend";
 import { Analysing } from "./Analysing";
@@ -91,6 +93,18 @@ const TRIED: { id: string; label: string }[] = [
   { id: "probiotic", label: "Another probiotic or supplement" },
   { id: "nothing", label: "Nothing yet — this is our first go" },
 ];
+const TRIED_OUTCOME: { id: TriedOutcome; label: string; emoji: string }[] = [
+  { id: "none", label: "No — no real difference", emoji: "😞" },
+  { id: "temporary", label: "A little — but it came straight back", emoji: "🔁" },
+  { id: "faded", label: "It worked for a while, then stopped", emoji: "📉" },
+  { id: "mixed", label: "Some things helped, some didn't", emoji: "🤷" },
+];
+const SPEND: { id: Spend; label: string }[] = [
+  { id: "lt50", label: "Under £50" },
+  { id: "50to200", label: "£50–£200" },
+  { id: "200to500", label: "£200–£500" },
+  { id: "gt500", label: "£500 or more" },
+];
 
 const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   antibiotics: {
@@ -119,23 +133,25 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 
 type StepKey =
   | "size" | "age" | "symptoms" | "card-stat"
-  | "diet" | "treats"
+  | "diet" | "treats" | "card-beforeafter"
   | "breath" | "coat" | "energy" | "grass" | "wind" | "stool"
-  | "duration" | "card-beforeafter" | "tried" | "card-tried";
+  | "duration" | "tried" | "tried-outcome" | "tried-spend" | "card-tried";
 
 const QUESTION_KEYS: StepKey[] = [
   "size", "age", "symptoms", "diet", "treats",
   "breath", "coat", "energy", "grass", "wind", "stool",
-  "duration", "tried",
+  "duration", "tried", "tried-outcome", "tried-spend",
 ];
 
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
     "size", "age", "symptoms", "card-stat",
-    "diet", "treats",
+    "diet", "treats", "card-beforeafter",
     "breath", "coat", "energy", "grass", "wind", "stool",
-    "duration", "card-beforeafter", "tried",
+    "duration", "tried",
   ];
+  // If they've tried something, dig into how it went before the explainer.
+  if (a.tried.some((t) => t !== "nothing")) seq.push("tried-outcome", "tried-spend");
   if (a.tried.some((t) => TRIED_EXPLAINERS[t])) seq.push("card-tried");
   return seq;
 }
@@ -235,6 +251,15 @@ export function QuizFunnel() {
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
         {key === "tried" && <TriedStep a={a} dog={dog} update={update} onNext={next} />}
+        {key === "tried-outcome" && (
+          <SingleStep title={`Did any of it actually work for ${dog}?`} eyebrow="What you've tried"
+            options={TRIED_OUTCOME} value={a.triedOutcome} onPick={(v) => { update({ triedOutcome: v as TriedOutcome }); next(); }} />
+        )}
+        {key === "tried-spend" && (
+          <SingleStep title="Roughly how much have you spent trying to sort it so far?"
+            rationale="Vet visits, meds, chews, special food — it adds up fast."
+            options={SPEND} value={a.spend} onPick={(v) => { update({ spend: v as Spend }); next(); }} />
+        )}
         {key === "card-tried" && <TriedExplainerCard a={a} onNext={next} />}
       </main>
     </div>
