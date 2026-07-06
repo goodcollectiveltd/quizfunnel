@@ -193,8 +193,12 @@ export function QuizFunnel() {
   if (phase === "analysing") return <Analysing dog={dog} onDone={() => setPhase("result")} />;
   if (phase === "result") return <Result answers={a} />;
 
-  const qTotal = seq.filter((k) => QUESTION_KEYS.includes(k)).length;
   const qDone = seq.slice(0, idx + 1).filter((k) => QUESTION_KEYS.includes(k)).length;
+  // The "tried" question branches into two follow-ups (outcome + spend) only once the
+  // owner has answered it. Until then, assume the longer path so the bar can't reach
+  // 100% on the "tried" page and then jump backwards when the follow-ups appear.
+  const triedAnswered = a.tried.length > 0;
+  const qTotal = seq.filter((k) => QUESTION_KEYS.includes(k)).length + (triedAnswered ? 0 : 2);
 
   return (
     <div className="min-h-dvh">
