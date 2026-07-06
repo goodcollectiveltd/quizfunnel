@@ -10,18 +10,12 @@ import {
   emptyAnswers,
   SIZE_LABEL,
   type AgeBand,
-  type Breath,
-  type Coat,
   type DogSize,
   type Duration,
-  type Energy,
-  type Grass,
   type QuizAnswers,
-  type Spend,
   type Stool,
   type Treats,
   type TriedOutcome,
-  type Wind,
 } from "@/lib/recommend";
 import { Analysing } from "./Analysing";
 import { Result } from "./Result";
@@ -45,30 +39,15 @@ const TREATS: { id: Treats; label: string }[] = [
   { id: "sometimes", label: "A few times a week" },
   { id: "daily", label: "Daily — treats or table scraps" },
 ];
-const BREATH: { id: Breath; label: string; emoji: string }[] = [
-  { id: "fresh", label: "Normal — nothing unusual", emoji: "🌿" },
-  { id: "sometimes", label: "A bit whiffy sometimes", emoji: "😬" },
-  { id: "bad", label: "Often strong or bad", emoji: "🤢" },
-];
-const COAT: { id: Coat; label: string; emoji: string }[] = [
-  { id: "shiny", label: "Shiny and healthy", emoji: "✨" },
-  { id: "normal", label: "Alright — nothing special", emoji: "🐕" },
-  { id: "dull", label: "Dull, dry or flaky", emoji: "🍂" },
-];
-const ENERGY: { id: Energy; label: string; emoji: string }[] = [
-  { id: "bright", label: "Bright and playful", emoji: "⚡" },
-  { id: "normal", label: "About normal", emoji: "🙂" },
-  { id: "low", label: "Flat, tired or low mood", emoji: "😔" },
-];
-const GRASS: { id: Grass; label: string; emoji: string }[] = [
-  { id: "no", label: "Rarely or never", emoji: "🚫" },
-  { id: "sometimes", label: "Now and then", emoji: "🌱" },
-  { id: "often", label: "A lot", emoji: "🌾" },
-];
-const WIND: { id: Wind; label: string; emoji: string }[] = [
-  { id: "rare", label: "Rarely", emoji: "🌱" },
-  { id: "sometimes", label: "Sometimes", emoji: "😬" },
-  { id: "often", label: "Often — and it clears a room", emoji: "💨" },
+// One "other signs" checklist replaces five separate single-select questions. Each
+// tick maps to the underlying answer field the scoring already uses (present → the
+// concerning value; left unticked → null, i.e. no signal, no deduction).
+const SIGNS: { field: "breath" | "coat" | "energy" | "grass" | "wind"; value: string; label: string; emoji: string }[] = [
+  { field: "breath", value: "bad", label: "Bad or strong breath", emoji: "😮‍💨" },
+  { field: "coat", value: "dull", label: "A dull, dry or flaky coat", emoji: "🍂" },
+  { field: "energy", value: "low", label: "Low energy or a flat mood", emoji: "😔" },
+  { field: "grass", value: "often", label: "Eats grass a lot", emoji: "🌾" },
+  { field: "wind", value: "often", label: "Smelly, frequent wind", emoji: "💨" },
 ];
 const STOOL: { id: Stool; label: string }[] = [
   { id: "runny", label: "5 · Loose or runny (watery, hard to pick up)" },
@@ -99,13 +78,6 @@ const TRIED_OUTCOME: { id: TriedOutcome; label: string; emoji: string }[] = [
   { id: "faded", label: "It worked for a while, then stopped", emoji: "📉" },
   { id: "mixed", label: "Some things helped, some didn't", emoji: "🤷" },
 ];
-const SPEND: { id: Spend; label: string }[] = [
-  { id: "lt50", label: "Under £50" },
-  { id: "50to200", label: "£50–£200" },
-  { id: "200to500", label: "£200–£500" },
-  { id: "gt500", label: "£500 or more" },
-];
-
 const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   antibiotics: {
     title: "Antibiotics wipe out the good too",
@@ -138,32 +110,32 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 type StepKey =
   | "size" | "age" | "symptoms" | "card-stat"
   | "diet" | "treats" | "card-beforeafter"
-  | "breath" | "coat" | "energy" | "card-midsignals" | "grass" | "wind" | "stool"
-  | "duration" | "tried" | "tried-outcome" | "tried-spend" | "card-tried" | "card-firsttimer";
+  | "signs" | "stool"
+  | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer" | "card-mission";
 
 const QUESTION_KEYS: StepKey[] = [
   "size", "age", "symptoms", "diet", "treats",
-  "breath", "coat", "energy", "grass", "wind", "stool",
-  "duration", "tried", "tried-outcome", "tried-spend",
+  "signs", "stool", "duration", "tried", "tried-outcome",
 ];
 
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
     "size", "age", "symptoms", "card-stat",
     "diet", "treats", "card-beforeafter",
-    // A proof/progress breather splits the six gut-signal questions 3-and-3.
-    "breath", "coat", "energy", "card-midsignals", "grass", "wind", "stool",
+    "signs", "stool",
     "duration", "tried",
   ];
   const triedSomething = a.tried.some((t) => t !== "nothing");
   if (triedSomething) {
-    // If they've tried something, dig into how it went, then disarm it.
-    seq.push("tried-outcome", "tried-spend");
+    // If they've tried something, ask how it went, then disarm it.
+    seq.push("tried-outcome");
     if (a.tried.some((t) => TRIED_EXPLAINERS[t])) seq.push("card-tried");
   } else if (a.tried.includes("nothing")) {
     // First-timers get a positive "you're starting at the source" reframe instead.
     seq.push("card-firsttimer");
   }
+  // The 51% rescue mission lands last — a values beat as the plan is built.
+  seq.push("card-mission");
   return seq;
 }
 
@@ -194,11 +166,10 @@ export function QuizFunnel() {
   if (phase === "result") return <Result answers={a} />;
 
   const qDone = seq.slice(0, idx + 1).filter((k) => QUESTION_KEYS.includes(k)).length;
-  // The "tried" question branches into two follow-ups (outcome + spend) only once the
-  // owner has answered it. Until then, assume the longer path so the bar can't reach
-  // 100% on the "tried" page and then jump backwards when the follow-ups appear.
+  // The "tried" question adds one follow-up (did it work?) only once it's answered.
+  // Until then, assume it so the bar can't hit 100% on "tried" and then jump backwards.
   const triedAnswered = a.tried.length > 0;
-  const qTotal = seq.filter((k) => QUESTION_KEYS.includes(k)).length + (triedAnswered ? 0 : 2);
+  const qTotal = seq.filter((k) => QUESTION_KEYS.includes(k)).length + (triedAnswered ? 0 : 1);
 
   return (
     <div className="min-h-dvh">
@@ -229,31 +200,7 @@ export function QuizFunnel() {
             rationale="Rich, fatty treats and scraps can tip a balanced gut over the edge."
             options={TREATS} value={a.treats} onPick={(v) => { update({ treats: v as Treats }); next(); }} />
         )}
-        {key === "breath" && (
-          <SingleStep title={`How's ${dog}'s breath?`} eyebrow="Small signs, big clues"
-            rationale="Persistent bad breath usually starts in the gut, not the mouth."
-            options={BREATH} value={a.breath} onPick={(v) => { update({ breath: v as Breath }); next(); }} />
-        )}
-        {key === "coat" && (
-          <SingleStep title={`What's ${dog}'s coat like?`}
-            rationale="Skin and coat are a window into the gut — dull or flaky often tracks imbalance."
-            options={COAT} value={a.coat} onPick={(v) => { update({ coat: v as Coat }); next(); }} />
-        )}
-        {key === "energy" && (
-          <SingleStep title={`How are ${dog}'s energy and mood?`}
-            rationale="The gut and brain are linked — flat mood and low energy can trace back to the gut."
-            options={ENERGY} value={a.energy} onPick={(v) => { update({ energy: v as Energy }); next(); }} />
-        )}
-        {key === "grass" && (
-          <SingleStep title={`Does ${dog} eat grass?`}
-            rationale="Dogs often eat grass to settle an unsettled gut."
-            options={GRASS} value={a.grass} onPick={(v) => { update({ grass: v as Grass }); next(); }} />
-        )}
-        {key === "wind" && (
-          <SingleStep title={`How's ${dog}'s wind?`}
-            rationale="Frequent, smelly wind is one of the clearest signs of a gut out of balance."
-            options={WIND} value={a.wind} onPick={(v) => { update({ wind: v as Wind }); next(); }} />
-        )}
+        {key === "signs" && <SignsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "stool" && (
           <SingleStep title={`And ${dog}'s poos — what are they usually like?`} eyebrow="The classic gut check"
             rationale="Using the Bristol Stool Chart for Dogs — type 3 (formed, moist, easy to pick up) is ideal."
@@ -265,17 +212,12 @@ export function QuizFunnel() {
             options={DURATION} value={a.duration} onPick={(v) => { update({ duration: v as Duration }); next(); }} />
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
-        {key === "card-midsignals" && <MidSignalsCard dog={dog} onNext={next} />}
         {key === "card-firsttimer" && <FirstTimerCard dog={dog} onNext={next} />}
+        {key === "card-mission" && <MissionCard dog={dog} onNext={next} />}
         {key === "tried" && <TriedStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "tried-outcome" && (
           <SingleStep title={`Did any of it actually work for ${dog}?`} eyebrow="What you've tried"
             options={TRIED_OUTCOME} value={a.triedOutcome} onPick={(v) => { update({ triedOutcome: v as TriedOutcome }); next(); }} />
-        )}
-        {key === "tried-spend" && (
-          <SingleStep title="Roughly how much have you spent trying to sort it so far?"
-            rationale="Vet visits, meds, chews, special food — it adds up fast."
-            options={SPEND} value={a.spend} onPick={(v) => { update({ spend: v as Spend }); next(); }} />
         )}
         {key === "card-tried" && <TriedExplainerCard a={a} dog={dog} onNext={next} />}
       </main>
@@ -390,6 +332,24 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
   );
 }
 
+function SignsStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
+  const isOn = (s: (typeof SIGNS)[number]) => (a as unknown as Record<string, unknown>)[s.field] === s.value;
+  const toggle = (s: (typeof SIGNS)[number]) =>
+    update({ [s.field]: isOn(s) ? null : s.value } as Partial<QuizAnswers>);
+  const count = SIGNS.filter(isOn).length;
+  return (
+    <StepShell title={`Noticed any of these with ${dog} lately?`} eyebrow="Small signs, big clues"
+      sub="Tick any that ring true — these are the everyday clues to what the gut is doing.">
+      <div className="space-y-3">
+        {SIGNS.map((s) => (
+          <OptionCard key={s.field} multi active={isOn(s)} emoji={s.emoji} label={s.label} onClick={() => toggle(s)} />
+        ))}
+      </div>
+      <StickyNext disabled={false} onNext={onNext} label={count ? `Continue (${count} selected)` : "None of these — continue"} />
+    </StepShell>
+  );
+}
+
 /* ------------------------------- cards ------------------------------- */
 
 function InfoCard({ eyebrow, title, body, onNext }: { eyebrow: string; title: string; body: string; onNext: () => void }) {
@@ -421,7 +381,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
       </figure>
       <div className="mt-7 flex flex-col items-center gap-2">
         <StarRating />
-        <p className="text-sm text-brand-ink/60">Nearly done — let's finish {dog}'s assessment.</p>
+        <p className="text-sm text-brand-ink/60">Just a few quick ones left to finish {dog}'s assessment.</p>
         <Button onClick={onNext} className="mt-2 w-full max-w-xs">Continue →</Button>
       </div>
     </div>
@@ -450,19 +410,19 @@ function TriedExplainerCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; o
   );
 }
 
-function MidSignalsCard({ dog, onNext }: { dog: string; onNext: () => void }) {
+function MissionCard({ dog, onNext }: { dog: string; onNext: () => void }) {
   return (
     <div className="animate-fade-up pt-6 text-center">
-      <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're over halfway</span>
-      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">These little signs are the real clues.</h1>
+      <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Why we do this</span>
+      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">Every order helps a rescue dog, too.</h1>
       <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
-        Breath, coat, energy — on their own they're easy to brush off. Together they show us exactly where {dog}'s gut balance is. A few more and we'll have the full picture.
+        Good for Pets gives <strong>51% of profits to animal rescue</strong>. So while we sort {dog}'s gut out, you're helping feed and care for dogs who've had the roughest start. That's the whole reason we exist.
       </p>
-      <div className="mx-auto mt-6 flex max-w-xs flex-col items-center gap-2 rounded-2xl bg-white p-4 shadow-card">
-        <StarRating />
-        <p className="text-sm font-semibold text-brand-ink/70">Trusted by 10,000+ UK dog owners</p>
+      <div className="mx-auto mt-6 flex max-w-xs items-center justify-center gap-3 rounded-2xl bg-brand-pink/25 p-4">
+        <span className="text-4xl font-extrabold leading-none text-brand-red">51%</span>
+        <span className="text-left text-sm font-semibold leading-tight text-brand-ink/75">of profits go<br />to rescue dogs</span>
       </div>
-      <div className="mt-7"><Button onClick={onNext} className="w-full max-w-xs">Keep going →</Button></div>
+      <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Build {dog}'s plan →</Button></div>
     </div>
   );
 }
