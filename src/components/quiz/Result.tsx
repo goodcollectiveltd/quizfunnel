@@ -3,7 +3,6 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, type QuizAnswers } from "@/lib/recommend";
-import { symptomById } from "@/data/symptoms";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 
@@ -13,7 +12,6 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const rec = buildRecommendation(answers);
   const dog = answers.dogName.trim() || "your dog";
   const dogPossessive = answers.dogName.trim() ? `${answers.dogName.trim()}'s` : "your dog's";
-  const selected = answers.symptoms.map((s) => symptomById(s));
 
   // Personalised timeline: first significant change ~8 weeks; 90-day results guarantee.
   const now = new Date();
@@ -36,12 +34,17 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     dog_size: answers.size,
     dog_age: answers.age,
     symptoms: rec.symptoms.map((s) => s.noun),
-    stool_consistency: answers.stool,
-    poo_frequency: answers.pooFreq,
+    diet: answers.diet,
+    treats: answers.treats,
+    breath: answers.breath,
+    coat: answers.coat,
+    energy: answers.energy,
+    eats_grass: answers.grass,
     wind: answers.wind,
+    stool_consistency: answers.stool,
     issue_duration: answers.duration,
     tried_before: answers.tried,
-    diet: answers.diet,
+    signals_detected: rec.signals,
     recommended_product: rec.hero.name,
     recommended_upsell: rec.upsell?.name ?? null,
     gut_score: rec.gutScore,
@@ -90,19 +93,24 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </div>
         </div>
 
-        {/* Symptom recap — every selected symptom, addressed equally */}
-        <div className="mt-6">
-          <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-ink/50">
-            {dogPossessive} plan tackles all of this
-          </p>
-          <div className="mt-3 flex flex-wrap justify-center gap-2">
-            {selected.map((s) => (
-              <span key={s.id} className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-3 py-1 text-sm font-semibold text-brand-red">
-                <span className="text-brand-red">✓</span> {s.emoji} {s.label}
-              </span>
-            ))}
+        {/* Signals we detected — the evidence behind the diagnosis */}
+        {rec.signals.length > 0 && (
+          <div className="mt-6">
+            <p className="text-center text-sm font-bold uppercase tracking-wide text-brand-ink/50">
+              What we picked up on for {dog}
+            </p>
+            <div className="mt-3 flex flex-wrap justify-center gap-2">
+              {rec.signals.map((sig) => (
+                <span key={sig} className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-3 py-1 text-sm font-semibold capitalize text-brand-red">
+                  <span>✓</span> {sig}
+                </span>
+              ))}
+            </div>
+            <p className="mx-auto mt-3 max-w-md text-center text-xs text-brand-ink/50">
+              Each of these can trace back to the gut — and every one fed into {dogPossessive} score above.
+            </p>
           </div>
-        </div>
+        )}
 
         {/* Root-cause cards */}
         <div className="mt-6 grid grid-cols-2 gap-3">
