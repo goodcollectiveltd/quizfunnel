@@ -61,32 +61,32 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     image: "/images/products/omega.png",
     contents: [
       "Omega 3-6-9 + vitamin E for skin and coat",
-      "Works alongside Probio+ — settle the gut, feed the skin",
+      "Works alongside 5 Strain Probiotic+ — settle the gut, feed the skin",
       "Whole or pierced into food",
       "UK-made to GMP standards",
     ],
     addOnLabel: "Add Omega 3-6-9",
     addOnBlurb:
-      "For itchy, flaky skin and a dull coat — feeds the skin while Probio+ settles the gut.",
+      "For itchy, flaky skin and a dull coat — feeds the skin while 5 Strain Probiotic+ settles the gut.",
   },
   skinGutDuo: {
     key: "skinGutDuo",
     name: "Skin & Gut Duo",
-    tagline: "Probio+ and Omega 3-6-9, together — our best value for skin.",
-    format: "Probio+ sprinkle capsules + Omega 3-6-9 softgels",
+    tagline: "5 Strain Probiotic+ and Omega 3-6-9, together — our best value for skin.",
+    format: "5 Strain Probiotic+ sprinkle capsules + Omega 3-6-9 softgels",
     strength: "5 billion live bacteria + omega 3-6-9",
     supports: "gut health plus skin and coat condition",
     pdpUrl: PDP_URLS.skinGutDuo,
     image: "/images/products/skinGutDuo.png",
-    heroImage: "/images/products/skin-gut-duo-hero.jpg", // Probio+ & Omega tubs on red
+    heroImage: "/images/products/skin-gut-duo-hero.jpg", // 5 Strain Probiotic+ & Omega tubs on red
     contents: [
-      "Everything in Probio+ (5 strains, enzymes, prebiotic)",
+      "Everything in 5 Strain Probiotic+ (5 strains, enzymes, prebiotic)",
       "Omega 3-6-9 for skin, coat and general condition",
       "Our go-to pairing for itchy, flaky skin + dull coat",
       "Better value than buying both separately",
     ],
     addOnLabel: "Make it the Skin & Gut Duo",
     addOnBlurb:
-      "Add Omega 3-6-9 to Probio+ for extra skin & coat support — bundled at our best price.",
+      "Add Omega 3-6-9 to 5 Strain Probiotic+ for extra skin & coat support — bundled at our best price.",
   },
 };

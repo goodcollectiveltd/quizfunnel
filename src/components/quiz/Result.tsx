@@ -6,7 +6,7 @@ import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recomm
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { fetchDonationTotal } from "@/lib/donation";
-import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, heroCheckoutReady } from "@/lib/commerce";
+import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, pricePerDay, heroCheckoutReady } from "@/lib/commerce";
 
 const VET_IMG = "/images/people/kishan.jpg";
 
@@ -32,14 +32,17 @@ export function Result({ answers }: { answers: QuizAnswers }) {
 
   // Direct-to-cart checkout — product-aware: the hero may be Probio+ (gut) or the
   // Skin & Gut Duo (skin), each with its own tiers, prices and Loop plans.
+  // Multi-dog: a tub per dog, dosed by size. Default the quantity to the pack size.
+  const dogs = Math.min(Math.max(answers.dogCount ?? 1, 1), 3);
   const [subscribe, setSubscribe] = useState(CHECKOUT.defaultSubscribe);
-  const [tierIdx, setTierIdx] = useState(CHECKOUT.defaultTierIndex);
+  const [tierIdx, setTierIdx] = useState(Math.min(dogs - 1, 2));
   const hc = heroCommerceFor(rec.hero.key);
   const tiers = hc?.tiers ?? [];
   const tier = tiers[tierIdx] ?? tiers[0] ?? null;
   const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
-  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size) : null;
-  const cadence = hc && tier ? deliveryLabel(hc, answers.size, tier.qty) : null;
+  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size, dogs) : null;
+  const cadence = tier ? deliveryLabel(answers.size, tier.qty, dogs) : null;
+  const perDay = tier ? pricePerDay(subscribe ? tier.subPrice : tier.oncePrice, answers.size, tier.qty, dogs) : null;
   // Show the subscribe/one-time toggle whenever we have both price sets.
   const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
   const directReady = heroCheckoutReady(hc);
@@ -191,10 +194,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             <text x="196" y="168" fill="#fff" fontSize="9" fontWeight="bold" textAnchor="middle">Week 8</text>
             <text x="300" y="168" fill="#fff" fillOpacity="0.5" fontSize="9" textAnchor="end">Day 90</text>
           </svg>
-          <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white/10 p-4">
-            <span className="text-2xl">🛡️</span>
-            <p className="text-sm text-white/90">
-              <strong>Results guaranteed in 90 days.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund you in full.
+          <div className="mt-5 flex items-center gap-4 rounded-2xl border-2 border-brand-sky bg-brand-sky/15 p-5">
+            <span className="text-4xl">🛡️</span>
+            <p className="text-base leading-snug text-white">
+              <strong className="text-brand-sky">90-day money-back guarantee.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund every penny — no quibbles.
             </p>
           </div>
         </section>
@@ -215,7 +218,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 {spend ? ` and spent ${spend}` : ""} — {outcome}. You're not alone.
               </p>
               <p className="mt-2 text-sm italic text-brand-ink/70">
-                "The only thing that has worked — and I feel like I've tried every potion." — Kim B.
+                "My Frenchie had £120-a-month vet injections. Two months on Good for Pets and the change is amazing." — Shaun M.
               </p>
             </div>
           );
@@ -287,10 +290,21 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 })}
               </div>
 
+              {perDay && (
+                <p className="mt-2.5 text-center text-sm font-semibold text-brand-ink">
+                  That's about <span className="text-brand-red">{perDay}/day</span> {dogs > 1 ? `for all ${dogs} dogs` : `for ${dog}`}.
+                </p>
+              )}
+              {dogs > 1 && (
+                <p className="mt-1 text-center text-xs text-brand-ink/60">
+                  🐾 You've got {dogs} dogs — that's a tub each. Dose each one for their size.
+                </p>
+              )}
+
               {subscribe && (
                 <ul className="mt-3 grid gap-1 text-xs font-semibold text-brand-ink/70">
                   {cadence && (
-                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dog}'s daily dose, so you never run out or overstock</li>
+                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dogs > 1 ? "your dogs'" : `${dog}'s`} daily dose, so you never run out or overstock</li>
                   )}
                   <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> {CHECKOUT.subscription.firstOrderOff}% off your first order, then {CHECKOUT.subscription.futureOff}% off every future order</li>
                   {CHECKOUT.subscription.freeShipping && <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Free shipping for life · pause or cancel anytime</li>}
@@ -359,9 +373,9 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           className="mt-10 flex items-center gap-4 rounded-3xl bg-brand-ink p-5 text-left text-white shadow-card transition-transform hover:scale-[0.99]">
           <span className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-brand-red text-lg font-extrabold">51%</span>
           <span className="flex-1">
-            <span className="block font-extrabold">Helping {dog} helps thousands more.</span>
+            <span className="block font-extrabold">Still making up your mind? Here's one more reason.</span>
             <span className="mt-1 block text-sm text-white/75">
-              We give 51% of our profits to animal welfare — so every order supports rescue dogs around the world. See where it goes →
+              We give 51% of our profits to animal welfare — so helping {dog} helps thousands of rescue dogs too. See where it goes →
             </span>
             {donated && <span className="mt-1.5 block text-sm font-bold text-brand-sky">{donated} donated so far</span>}
           </span>

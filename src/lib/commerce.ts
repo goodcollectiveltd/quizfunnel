@@ -94,9 +94,9 @@ export const CHECKOUT = {
   defaultSubscribe: true,
 };
 
-/** How many days a purchase of `qty` tubs/packs lasts for a dog of `size`. */
-export function refillDays(size: DogSize, qty: number): number {
-  return Math.round((TUB_CAPSULES * qty) / CAPS_PER_DAY[size]);
+/** How many days a purchase of `qty` tubs/packs lasts across `dogs` dogs of `size`. */
+export function refillDays(size: DogSize, qty: number, dogs = 1): number {
+  return Math.round((TUB_CAPSULES * qty) / (CAPS_PER_DAY[size] * Math.max(dogs, 1)));
 }
 
 /** Closest configured plan to `days` — prefers a cadence ≤ days (ship early, not late). */
@@ -109,24 +109,35 @@ function planForDays(hc: HeroCommerce, days: number): { id: string; days: number
   return notOver[0] ?? avail.sort((a, b) => a.days - b.days)[0];
 }
 
-/** Selling-plan id to apply for a dog size × quantity (size-matched, with fallback). */
-export function sellingPlanFor(hc: HeroCommerce, size: DogSize | null, qty: number): string {
+/** Selling-plan id to apply for a dog size × quantity × dogs (size-matched, with fallback). */
+export function sellingPlanFor(hc: HeroCommerce, size: DogSize | null, qty: number, dogs = 1): string {
   if (size) {
-    const p = planForDays(hc, refillDays(size, qty));
+    const p = planForDays(hc, refillDays(size, qty, dogs));
     if (p) return p.id;
   }
   return hc.fallbackPlanId;
 }
 
-/** Human delivery cadence for a dog size × quantity, e.g. "every 3 months". */
-export function deliveryLabel(hc: HeroCommerce, size: DogSize | null, qty: number): string | null {
+/**
+ * Human delivery cadence, e.g. "every 3 months". We show the TRUE run-rate (how long
+ * the tubs actually last for this dog/quantity), not the nearest Loop cadence — if Loop
+ * ships a touch sooner that's just safe overlap, and the number always matches the maths.
+ */
+export function deliveryLabel(size: DogSize | null, qty: number, dogs = 1): string | null {
   if (!size) return null;
-  const ideal = refillDays(size, qty);
-  const plan = planForDays(hc, ideal); // reflect the ACTUAL cadence shipped
-  const days = plan ? plan.days : ideal;
+  const days = refillDays(size, qty, dogs);
   if (days <= 35) return "every month";
   if (days <= 49) return "every 6 weeks";
   return `every ${Math.round(days / 30)} months`;
+}
+
+/** Per-day cost for display: total price ÷ days the order lasts. Returns e.g. "£0.35". */
+export function pricePerDay(priceStr: string, size: DogSize | null, tubs: number, dogs = 1): string | null {
+  if (!size) return null;
+  const amount = Number((priceStr || "").replace(/[^0-9.]/g, ""));
+  const days = refillDays(size, tubs, dogs);
+  if (!isFinite(amount) || amount <= 0 || days <= 0) return null;
+  return "£" + (amount / days).toFixed(2);
 }
 
 export interface CartAdd {
@@ -142,9 +153,9 @@ export interface CartAdd {
  * because Shopify silently DROPS `selling_plan` on cart permalinks — the subscription
  * (and its discount) never attaches. The add endpoint honours it.
  */
-export function tierCartAdd(hc: HeroCommerce, tier: PriceTier, subscribe: boolean, size: DogSize | null): CartAdd | null {
+export function tierCartAdd(hc: HeroCommerce, tier: PriceTier, subscribe: boolean, size: DogSize | null, dogs = 1): CartAdd | null {
   if (!tier.variantId) return null;
-  const sellingPlanId = subscribe ? sellingPlanFor(hc, size, tier.qty) : undefined;
+  const sellingPlanId = subscribe ? sellingPlanFor(hc, size, tier.qty, dogs) : undefined;
   const params = new URLSearchParams();
   if (CHECKOUT.discountCode) params.set("discount", CHECKOUT.discountCode);
   for (const [k, v] of Object.entries(getAttribution())) params.set(k, v);

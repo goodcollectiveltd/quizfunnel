@@ -28,6 +28,11 @@ const AGES: { id: AgeBand; label: string }[] = [
   { id: "adult", label: "Adult — 1 to 8 years" },
   { id: "senior", label: "Senior — 8 years+" },
 ];
+const DOGCOUNT: { id: string; label: string; emoji: string }[] = [
+  { id: "1", label: "Just the one", emoji: "🐶" },
+  { id: "2", label: "Two dogs", emoji: "🐶🐶" },
+  { id: "3", label: "Three or more", emoji: "🐶🐶🐶" },
+];
 const DIET: { id: string; label: string }[] = [
   { id: "raw", label: "Raw or fresh food" },
   { id: "kibble", label: "Dry kibble" },
@@ -129,19 +134,19 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "size" | "age" | "symptoms" | "card-stat"
+  | "size" | "dogcount" | "age" | "symptoms" | "card-stat"
   | "diet" | "goal" | "card-beforeafter"
   | "signs" | "stool"
   | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "size", "age", "symptoms", "diet", "goal",
+  "size", "dogcount", "age", "symptoms", "diet", "goal",
   "signs", "stool", "duration", "tried", "tried-outcome",
 ];
 
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
-    "size", "age", "symptoms", "card-stat",
+    "size", "dogcount", "age", "symptoms", "card-stat",
     // They name the outcome they want, then the before/after card confirms it.
     "diet", "goal", "card-beforeafter",
     "signs", "stool",
@@ -199,6 +204,12 @@ export function QuizFunnel() {
           <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
             value={a.size} onPick={(v) => { update({ size: v as DogSize }); next(); }} />
+        )}
+        {key === "dogcount" && (
+          <SingleStep title="How many dogs are you sorting out?" eyebrow="Your pack"
+            rationale="So we get the right amount — and dose each one properly for their size."
+            options={DOGCOUNT} value={a.dogCount ? String(a.dogCount) : null}
+            onPick={(v) => { update({ dogCount: Number(v) }); next(); }} />
         )}
         {key === "age" && (
           <SingleStep title={`How old is ${dog}?`} options={AGES}
