@@ -69,16 +69,16 @@ export const SPEND_LABEL: Record<Spend, string> = {
 
 export const SIZE_LABEL: Record<DogSize, string> = {
   toy: "Toy (under 10kg)",
-  small: "Small (10–20kg)",
-  medium: "Medium (20–40kg)",
+  small: "Small (10–25kg)",
+  medium: "Medium (25–40kg)",
   large: "Large (over 40kg)",
 };
 
 export const DOSE_BY_SIZE: Record<DogSize, string> = {
   toy: "1 sprinkle capsule a day",
   small: "1 sprinkle capsule a day",
-  medium: "1–2 sprinkle capsules a day",
-  large: "2–3 sprinkle capsules a day",
+  medium: "2 sprinkle capsules a day",
+  large: "3 sprinkle capsules a day",
 };
 
 export interface RootCause {
