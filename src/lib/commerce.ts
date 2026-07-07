@@ -14,6 +14,7 @@
 import { type ProductKey } from "@/data/products";
 import type { DogSize } from "@/lib/recommend";
 import { getAttribution } from "@/lib/tracking";
+import { getQuizId } from "@/lib/submissions";
 
 // Cart actions must hit the store's CANONICAL domain (apex). www.goodforpets.co
 // 301-redirects to it, and that redirect drops the freshly-set cart cookie — so
@@ -184,6 +185,10 @@ export function submitCartAdd(add: CartAdd, opts: { target?: string } = {}): voi
   field("id", add.variantId);
   field("quantity", String(add.quantity));
   if (add.sellingPlanId) field("selling_plan", add.sellingPlanId);
+  // Hidden line-item property (underscore = not shown to the customer) so the
+  // resulting Shopify order can be stitched back to the quiz submission.
+  const quizId = getQuizId();
+  if (quizId) field("properties[_quiz_id]", quizId);
   field("return_to", add.returnTo);
   document.body.appendChild(form);
   form.submit();

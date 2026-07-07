@@ -5,6 +5,7 @@ import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, hasSkinSignal, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
+import { saveSubmission } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
 import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, pricePerDay, heroCheckoutReady } from "@/lib/commerce";
 
@@ -92,6 +93,15 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     gut_rating: rec.rating,
     quiz_source: "good-for-pets-quiz",
   };
+
+  // Capture EVERY completed quiz (email or not) to the results backend, once, on
+  // reaching the result. No-op until the backend is wired; never blocks the page.
+  const capturedRef = useRef(false);
+  useEffect(() => {
+    if (capturedRef.current) return;
+    capturedRef.current = true;
+    saveSubmission({ profile });
+  }, [profile]);
 
   // Live donation total from the published Google Sheet (null until loaded / if it fails).
   const [donated, setDonated] = useState<string | null>(null);
@@ -487,6 +497,7 @@ function EmailCapture({ dog, profile }: { dog: string; profile: Record<string, u
   const submit = async () => {
     if (!email.includes("@")) return;
     setSent(true); // optimistic — never block the user
+    saveSubmission({ profile, email }); // attach the email to this quiz_id row
     const ok = await subscribeEmail(email, profile);
     if (ok) track("CompleteRegistration", { dog_name: dog });
   };
