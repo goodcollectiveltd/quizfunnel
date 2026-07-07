@@ -20,7 +20,6 @@ export type Goal = "paws" | "skin" | "ears" | "tummy" | "happy"; // the outcome 
 export interface QuizAnswers {
   dogName: string;
   size: DogSize | null;
-  dogCount: number | null; // 1 / 2 / 3 (3 = "3 or more") — for multi-dog quantity & supply
   age: AgeBand | null;
   symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan
   goal: Goal | null; // what they're hoping to get back for their dog (emotional lead-in)
@@ -44,7 +43,6 @@ export interface QuizAnswers {
 export const emptyAnswers: QuizAnswers = {
   dogName: "",
   size: null,
-  dogCount: null,
   age: null,
   symptoms: [],
   goal: null,

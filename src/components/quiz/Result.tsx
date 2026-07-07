@@ -32,16 +32,14 @@ export function Result({ answers }: { answers: QuizAnswers }) {
 
   // Direct-to-cart checkout — product-aware: the hero may be Probio+ (gut) or the
   // Skin & Gut Duo (skin), each with its own tiers, prices and Loop plans.
-  // Multi-dog: a tub per dog, dosed by size. Default the quantity to the pack size.
-  const dogs = Math.min(Math.max(answers.dogCount ?? 1, 1), 3);
   const [subscribe, setSubscribe] = useState(CHECKOUT.defaultSubscribe);
-  const [tierIdx, setTierIdx] = useState(Math.min(dogs - 1, 2));
+  const [tierIdx, setTierIdx] = useState(CHECKOUT.defaultTierIndex);
   const hc = heroCommerceFor(rec.hero.key);
   const tiers = hc?.tiers ?? [];
   const tier = tiers[tierIdx] ?? tiers[0] ?? null;
   const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
-  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size, dogs) : null;
-  const cadence = tier ? deliveryLabel(answers.size, tier.qty, dogs) : null;
+  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size) : null;
+  const cadence = tier ? deliveryLabel(answers.size, tier.qty) : null;
   // Show the subscribe/one-time toggle whenever we have both price sets.
   const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
   const directReady = heroCheckoutReady(hc);
@@ -228,7 +226,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         {/* Recommendation */}
         <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-card">
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
-            {dogs > 1 ? `${dog} & your pack's` : dogPossessive} recommended plan
+            {dogPossessive} recommended plan
           </div>
           {/* Product hero — the sprinkle-into-food shot from the PDP */}
           <img src={rec.hero.heroImage ?? rec.hero.image} alt={`${rec.hero.name} sprinkled into a food bowl`} className="block aspect-square w-full object-cover" />
@@ -273,7 +271,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 {tiers.map((t, i) => {
                   const selected = i === tierIdx;
                   const price = subscribe ? t.subPrice : t.oncePrice;
-                  const tPerDay = pricePerDay(price, answers.size, t.qty, dogs);
+                  const tPerDay = pricePerDay(price, answers.size, t.qty);
                   return (
                     <button key={t.label} type="button" role="radio" aria-checked={selected} onClick={() => setTierIdx(i)}
                       className={`relative flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3.5 text-left transition-all ${selected ? "border-brand-red shadow-card" : "border-brand-ink/15 hover:border-brand-red/30"}`}>
@@ -286,7 +284,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                       <span className="text-right leading-tight">
                         {tPerDay ? (
                           <>
-                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70">{dogs > 1 ? " /dog·day" : " /day"}</span></span>
+                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70"> /day</span></span>
                             <span className="block text-xs font-semibold text-brand-ink/55">
                               {price} today{t.compareAt && <span className="ml-1 text-brand-ink/35 line-through">{t.compareAt}</span>}
                             </span>
@@ -303,16 +301,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 })}
               </div>
 
-              {dogs > 1 && (
-                <div className="mt-2.5 rounded-xl bg-brand-sky/15 p-3 text-center text-xs leading-relaxed text-brand-ink/75">
-                  🐾 <strong>For your {dogs} dogs:</strong> a tub each of the same daily formula — dose each one for their own size. We built this around {dog}; if your other {dogs === 2 ? "dog needs" : "dogs need"} something different, you can adjust at checkout.
-                </div>
-              )}
-
               {subscribe && (
                 <ul className="mt-3 grid gap-1 text-xs font-semibold text-brand-ink/70">
                   {cadence && (
-                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dogs > 1 ? "your dogs'" : `${dog}'s`} daily dose, so you never run out or overstock</li>
+                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dog}'s daily dose, so you never run out or overstock</li>
                   )}
                   <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> {CHECKOUT.subscription.firstOrderOff}% off your first order, then {CHECKOUT.subscription.futureOff}% off every future order</li>
                   {CHECKOUT.subscription.freeShipping && <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Free shipping for life · pause or cancel anytime</li>}
