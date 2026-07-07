@@ -1,13 +1,22 @@
 /**
- * Analytics, Meta Pixel & attribution passthrough. Everything here is OPTIONAL and
- * driven by env vars — with none set, all functions are safe no-ops. Set these in the
- * host (Vercel/Netlify) and rebuild to activate. See .env.example.
+ * Analytics, Meta Pixel & attribution passthrough.
  *
- *   VITE_META_PIXEL_ID  — Meta (Facebook) Pixel ID
- *   VITE_GA4_ID         — GA4 Measurement ID (G-XXXXXXX)
+ * The Meta Pixel defaults to Good for Pets' live pixel (the SAME id the Shopify
+ * store fires Purchase to), so the quiz to store journey stays on one pixel and
+ * attribution lines up. VITE_META_PIXEL_ID overrides it if ever needed. The
+ * default only applies in production builds, so local dev never pollutes Meta.
+ *
+ * GA4/Klaviyo stay purely env-driven (safe no-ops unless their vars are set).
+ *
+ *   VITE_META_PIXEL_ID  Meta (Facebook) Pixel ID (optional override)
+ *   VITE_GA4_ID         GA4 Measurement ID (G-XXXXXXX)
  */
 
-const PIXEL_ID = import.meta.env.VITE_META_PIXEL_ID as string | undefined;
+// GFP's live Meta pixel, matching the pixel on goodforpets.co (Shopify) that
+// records Purchase, so quiz-side events (PageView/Lead/InitiateCheckout) and the
+// store-side Purchase all land on one pixel for clean attribution.
+const DEFAULT_PIXEL_ID = "3813384208943708";
+const PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID as string | undefined) ?? (import.meta.env.PROD ? DEFAULT_PIXEL_ID : undefined);
 const GA4_ID = import.meta.env.VITE_GA4_ID as string | undefined;
 
 const ATTR_KEYS = [
