@@ -24,9 +24,9 @@ import { track } from "@/lib/tracking";
 /* ------------------------------- options ------------------------------- */
 
 const AGES: { id: AgeBand; label: string }[] = [
-  { id: "puppy", label: "Puppy — under 1 year" },
-  { id: "adult", label: "Adult — 1 to 8 years" },
-  { id: "senior", label: "Senior — 8 years+" },
+  { id: "puppy", label: "Puppy (under 1 year)" },
+  { id: "adult", label: "Adult (1 to 8 years)" },
+  { id: "senior", label: "Senior (8 years+)" },
 ];
 const DIET: { id: string; label: string }[] = [
   { id: "raw", label: "Raw or fresh food" },
@@ -45,17 +45,17 @@ const GOALS: { id: Goal; label: string; emoji: string }[] = [
 ];
 // One-liner the confirmation card echoes back, so it reflects what they just said.
 const GOAL_ECHO: Record<Goal, string> = {
-  paws: "No more licking, chewing, red-raw paws — calm and comfortable.",
+  paws: "No more licking, chewing, red-raw paws. Just calm and comfortable.",
   skin: "Calm, itch-free skin is absolutely within reach.",
-  ears: "Clean, comfortable ears — yes, really.",
-  tummy: "A settled tummy and firmer poos — that's the goal.",
+  ears: "Clean, comfortable ears. Yes, really.",
+  tummy: "A settled tummy and firmer poos. That's the goal.",
   happy: "Your dog, back to their bright, happy self.",
 };
 // Confirmation-card image per goal. Skin & ears are REAL customer before/afters;
 // the rest are honest aspirational shots (no fake before/after labelling).
-const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; caption: string }> = {
-  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, caption: "A real customer's dog — the same skin, before and after." },
-  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, caption: "A real customer's dog — the same ear, before and after." },
+const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }> = {
+  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
+  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
   paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
   tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
   happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
@@ -91,38 +91,38 @@ const TRIED: { id: string; label: string }[] = [
   { id: "chews", label: "Allergy chews / baked chews" },
   { id: "diet", label: "Special / hypoallergenic diet" },
   { id: "probiotic", label: "Another probiotic or supplement" },
-  { id: "nothing", label: "Nothing yet — this is our first go" },
+  { id: "nothing", label: "Nothing yet, this is our first go" },
 ];
 const TRIED_OUTCOME: { id: TriedOutcome; label: string; emoji: string }[] = [
-  { id: "none", label: "No — no real difference", emoji: "😞" },
-  { id: "temporary", label: "A little — but it came straight back", emoji: "🔁" },
+  { id: "none", label: "No, no real difference", emoji: "😞" },
+  { id: "temporary", label: "A little, but it came straight back", emoji: "🔁" },
   { id: "faded", label: "It worked for a while, then stopped", emoji: "📉" },
   { id: "mixed", label: "Some things helped, some didn't", emoji: "🤷" },
 ];
 const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   antibiotics: {
     title: "Antibiotics wipe out the good too",
-    body: "They kill bad AND good bacteria — a sledgehammer where you need a scalpel. When the course ends, the bad bugs often surge back, because there's no good bacteria left to keep them in check. The gut needs rebuilding, not bombing.",
+    body: "They kill bad AND good bacteria, a sledgehammer where you need a scalpel. When the course ends, the bad bugs often surge back, because there's no good bacteria left to keep them in check. The gut needs rebuilding, not bombing.",
   },
   steroids: {
     title: "Steroids & Apoquel just mask it",
-    body: "They quieten the immune response, so the itch calms — but the moment they stop, it's usually back, because the driver in the gut was never addressed. A band-aid on a leaky pipe.",
+    body: "They quieten the immune response, so the itch calms, but the moment they stop, it's usually back, because the driver in the gut was never addressed. A band-aid on a leaky pipe.",
   },
   topical: {
     title: "Creams treat the surface only",
-    body: "Sprays and shampoos work on the skin. If it keeps coming back, the cause is almost always internal — which is why it never fully clears.",
+    body: "Sprays and shampoos work on the skin. If it keeps coming back, the cause is almost always internal, which is why it never fully clears.",
   },
   chews: {
     title: "Baked chews are mostly dead on arrival",
-    body: "Most chews are baked — the heat kills the live bacteria before they reach the gut, and they're often padded with fillers and sugars that feed the bad bugs. Ours are cold-pressed, so 5 billion actually survive.",
+    body: "Most chews are baked, and the heat kills the live bacteria before they reach the gut. They're often padded with fillers and sugars that feed the bad bugs. Ours are cold-pressed, so 5 billion actually survive.",
   },
   diet: {
     title: "A special diet alone can't rebuild the gut",
-    body: "Changing food can ease things for a while, but without restoring the balance of good bacteria, the same issues resurface. It's clean water poured into a polluted pool — the imbalance is still there.",
+    body: "Changing food can ease things for a while, but without restoring the balance of good bacteria, the same issues resurface. It's clean water poured into a polluted pool. The imbalance is still there.",
   },
   probiotic: {
     title: "Not all probiotics reach the gut",
-    body: "Many are underdosed or heat-treated and pass straight through. Strength and format matter — ours is 5 billion live CFU per capsule, cold-pressed and human-grade.",
+    body: "Many are underdosed or heat-treated and pass straight through. Strength and format matter. Ours is 5 billion live CFU per capsule, cold-pressed and human-grade.",
   },
 };
 
@@ -207,23 +207,23 @@ export function QuizFunnel() {
         {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
         {key === "card-stat" && (
           <InfoCard eyebrow="Did you know?" title="80% of your dog's immune system lives in the gut."
-            body={`That's why skin, ears, coat, energy — even breath — so often trace back to gut balance. Let's check ${dog}'s.`}
+            body={`That's why skin, ears, coat, energy (even breath) so often trace back to gut balance. Let's check ${dog}'s.`}
             onNext={next} />
         )}
         {key === "diet" && (
           <SingleStep title={`What do you feed ${dog}?`} eyebrow="Diet & the gut"
-            rationale="Diet is the single biggest thing shaping the gut microbiome — so we start here."
+            rationale="Diet is the single biggest thing shaping the gut microbiome, so we start here."
             options={DIET} value={a.diet} onPick={(v) => { update({ diet: v }); next(); }} />
         )}
         {key === "goal" && (
           <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
-            sub="Pick the one that matters most — just one. (We build the plan around everything else too.)"
+            sub="Pick the one that matters most. (We build the plan around everything else too.)"
             options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
         )}
         {key === "signs" && <SignsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "stool" && (
-          <SingleStep title={`And ${dog}'s poos — what are they usually like?`} eyebrow="The classic gut check"
-            rationale="Using the Bristol Stool Chart for Dogs — type 3 (formed, moist, easy to pick up) is ideal."
+          <SingleStep title={`And ${dog}'s poos, what are they usually like?`} eyebrow="The classic gut check"
+            rationale="Using the Bristol Stool Chart for Dogs, type 3 (formed, moist, easy to pick up) is ideal."
             options={STOOL} value={a.stool} onPick={(v) => { update({ stool: v as Stool }); next(); }} />
         )}
         {key === "duration" && (
@@ -321,7 +321,7 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
     update({ symptoms: has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id] });
   };
   return (
-    <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar — we build the plan around all of it.">
+    <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar. We build the plan around all of it.">
       <div className="space-y-3">
         {SYMPTOMS.map((s) => (
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
@@ -340,7 +340,7 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
     update({ tried: base.includes(id) ? base.filter((t) => t !== id) : [...base, id] });
   };
   return (
-    <StepShell title={`What have you already tried for ${dog}?`} sub="Tick all that apply — this tells us a lot.">
+    <StepShell title={`What have you already tried for ${dog}?`} sub="Tick all that apply. This tells us a lot.">
       <div className="space-y-3">
         {TRIED.map((o) => (
           <OptionCard key={o.id} multi active={a.tried.includes(o.id)} label={o.label} onClick={() => toggle(o.id)} />
@@ -358,13 +358,13 @@ function SignsStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
   const count = SIGNS.filter(isOn).length;
   return (
     <StepShell title={`Noticed any of these with ${dog} lately?`} eyebrow="Small signs, big clues"
-      sub="Tick any that ring true — these are the everyday clues to what the gut is doing.">
+      sub="Tick any that ring true. These are the everyday clues to what the gut is doing.">
       <div className="space-y-3">
         {SIGNS.map((s) => (
           <OptionCard key={s.field} multi active={isOn(s)} emoji={s.emoji} label={s.label} onClick={() => toggle(s)} />
         ))}
       </div>
-      <StickyNext disabled={false} onNext={onNext} label={count ? `Continue (${count} selected)` : "None of these — continue"} />
+      <StickyNext disabled={false} onNext={onNext} label={count ? `Continue (${count} selected)` : "None of these, continue"} />
     </StepShell>
   );
 }
@@ -389,7 +389,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
-      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here — and turned it around.</h1>
+      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
       {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
@@ -398,6 +398,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
             <>
               <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
               <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
+              {card.name && <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-brand-ink shadow">{card.name}</span>}
             </>
           )}
         </div>
@@ -419,7 +420,7 @@ function TriedExplainerCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; o
       <div className="text-center">
         <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Here's the thing…</span>
         <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">No wonder it hasn't stuck for {dog}.</h1>
-        <p className="mx-auto mt-2 max-w-sm text-sm text-brand-ink/60">It's not that you didn't try hard enough — it's that these couldn't fix what's actually going on.</p>
+        <p className="mx-auto mt-2 max-w-sm text-sm text-brand-ink/60">It's not that you didn't try hard enough. It's that these couldn't fix what's actually going on.</p>
       </div>
       <div className="mt-6 space-y-4">
         {explainers.map((e) => (
@@ -440,7 +441,7 @@ function FirstTimerCard({ dog, onNext }: { dog: string; onNext: () => void }) {
       <span className="rounded-full bg-brand-sky/25 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-ink">Good news</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">Starting fresh is actually the smart move.</h1>
       <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
-        Most owners spend months on symptom treatments before anyone mentions the gut. Beginning at the root cause means {dog} skips the trial-and-error — you're not undoing damage from things that never worked.
+        Most owners spend months on symptom treatments before anyone mentions the gut. Beginning at the root cause means {dog} skips the trial-and-error. You're not undoing damage from things that never worked.
       </p>
       <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Show me {dog}'s plan →</Button></div>
     </div>
@@ -462,7 +463,7 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
             Find the <span className="text-brand-red">root cause</span> of your dog's itching, licking &amp; gunky ears.
           </h1>
           <p className="mx-auto mt-3 max-w-md text-brand-ink/70">
-            This quick assessment reads your dog's symptoms, gut signals and history to work out what's really driving it — then shows you the exact plan. It usually starts in the gut.
+            This quick assessment reads your dog's symptoms, gut signals and history to work out what's really driving it, then shows you the exact plan. It usually starts in the gut.
           </p>
         </div>
 
@@ -480,7 +481,7 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
 
         {/* First question — on the landing page */}
         <div className="mt-8">
-          <label className="block text-lg font-extrabold text-brand-ink">First up — what's your dog's name?</label>
+          <label className="block text-lg font-extrabold text-brand-ink">First up, what's your dog's name?</label>
           <p className="mt-1 text-sm text-brand-ink/60">We'll build the whole assessment around them.</p>
           <input autoFocus value={a.dogName} onChange={(e) => update({ dogName: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder="e.g. Bella" maxLength={24}

@@ -37,11 +37,11 @@ export const SYMPTOMS: Symptom[] = [
     noun: "paw licking",
     short: "That wet, repetitive licking while you're trying to watch telly.",
     eyebrow: "Paw licking & chewing",
-    headline: "Still licking his paws? It might not be his skin — it might be his gut.",
+    headline: "Still licking his paws? It might not be his skin. It might be his gut.",
     subhead:
-      "The constant lick-chew-lick loop is one of the first things to settle once the gut is back in balance. See why — and the dogs it's already worked for.",
+      "The constant lick-chew-lick loop is one of the first things to settle once the gut is back in balance. See why, and the dogs it's already worked for.",
     agitate:
-      "You've cleaned his paws, changed his food, maybe been to the vet — and he's still at it. The licking isn't a habit. It's usually the skin flaring from the inside out.",
+      "You've cleaned his paws, changed his food, maybe been to the vet, and he's still at it. The licking isn't a habit. It's usually the skin flaring from the inside out.",
     recommend: "probioPlus",
     skinUpsell: true,
     image: "/images/symptoms/paw-licking.jpg",
@@ -56,7 +56,7 @@ export const SYMPTOMS: Symptom[] = [
     eyebrow: "Itchy, scratchy skin",
     headline: "The itch that no cream, spray or vet visit could fix.",
     subhead:
-      "When the scratching won't stop, the answer often isn't another lotion — it's calming the gut that's driving the flare. Feed the skin from the inside.",
+      "When the scratching won't stop, the answer often isn't another lotion. It's calming the gut that's driving the flare. Feed the skin from the inside.",
     agitate:
       "You've watched him scratch himself raw. You've tried the sprays, the shampoos, maybe steroids or Apoquel. It quietens down, then it's back. The relief never lasts.",
     recommend: "probioPlus",
@@ -71,17 +71,17 @@ export const SYMPTOMS: Symptom[] = [
     noun: "gunky ears",
     short: "The head-shaking and the smell you can't get rid of.",
     eyebrow: "Gunky, smelly ears",
-    headline: "Clean, clear ears in weeks — without another round of ear drops.",
+    headline: "Clean, clear ears in weeks, without another round of ear drops.",
     subhead:
       "The head-shaking, the black gunk, the smell. Owners tell us it's one of the fastest things to turn around once the gut is supported.",
     agitate:
-      "You clean them and days later they're gunky and smelly again. More drops, more vet trips, and the head-shaking never really stops. It's exhausting — for both of you.",
+      "You clean them and days later they're gunky and smelly again. More drops, more vet trips, and the head-shaking never really stops. It's exhausting, for both of you.",
     recommend: "probioPlus",
     skinUpsell: false,
     image: "/images/symptoms/gunky-ears.jpg",
     beforeAfter: {
       image: "/images/symptoms/gunky-ears-before-after.jpg",
-      caption: "A real customer's dog — the same ear, before and after Good for Pets.",
+      caption: "Murphy's ear, a 30-day transformation on Good for Pets.",
     },
   },
   {
@@ -94,7 +94,7 @@ export const SYMPTOMS: Symptom[] = [
     eyebrow: "Sensitive tummy",
     headline: "Firmer poos, calmer tummy, happier dog.",
     subhead:
-      "Sloppy stools, wind and an unsettled gut are exactly what 5 billion live bacteria a day are built to help — many owners see firmer poos within a couple of weeks.",
+      "Sloppy stools, wind and an unsettled gut are exactly what 5 billion live bacteria a day are built to help. Many owners see firmer poos within a couple of weeks.",
     agitate:
       "The sloppy poos, the rumbling tummy, the wind. You're second-guessing every meal and never quite sure what's setting him off.",
     recommend: "probioPlus",
@@ -113,7 +113,7 @@ export const SYMPTOMS: Symptom[] = [
     subhead:
       "Firmer, healthier stools help the glands empty naturally. Owners tell us the scooting eases off within a couple of weeks of a settled gut.",
     agitate:
-      "The scoot across the carpet, the repeat trips to have his glands emptied. It's the kind of thing that never fully goes away — until the gut and the stools are right.",
+      "The scoot across the carpet, the repeat trips to have his glands emptied. It's the kind of thing that never fully goes away, until the gut and the stools are right.",
     recommend: "probioPlus",
     skinUpsell: false,
   },
@@ -125,11 +125,11 @@ export const SYMPTOMS: Symptom[] = [
     noun: "tear staining",
     short: "The rusty stains under his eyes.",
     eyebrow: "Tear staining",
-    headline: "Clearer eyes, less staining — the whole-dog glow-up owners keep noticing.",
+    headline: "Clearer eyes, less staining: the whole-dog glow-up owners keep noticing.",
     subhead:
-      "Tear staining is one of those 'and another thing' wins owners mention once the gut settles — clearer eyes, less weeping, brighter overall.",
+      "Tear staining is one of those 'and another thing' wins owners mention once the gut settles: clearer eyes, less weeping, brighter overall.",
     agitate:
-      "The rusty stains under his eyes that no amount of wiping shifts. It's not just cosmetic — it's usually one more sign the system's out of balance.",
+      "The rusty stains under his eyes that no amount of wiping shifts. It's not just cosmetic. It's usually one more sign the system's out of balance.",
     recommend: "probioPlus",
     skinUpsell: false,
   },

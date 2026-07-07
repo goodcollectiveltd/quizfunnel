@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
-import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
+import { buildRecommendation, hasSkinSignal, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { fetchDonationTotal } from "@/lib/donation";
@@ -22,6 +22,17 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const rec = buildRecommendation(answers);
   const dog = answers.dogName.trim() || "your dog";
   const dogPossessive = answers.dogName.trim() ? `${answers.dogName.trim()}'s` : "your dog's";
+
+  // Swipeable product gallery for the buy box: the hero's product shots, then a real
+  // before/after proof slide when the case genuinely matches (skin → Bear, ears → Murphy).
+  const productShots = rec.hero.gallery ?? [rec.hero.heroImage ?? rec.hero.image, rec.hero.image];
+  const gallerySlides: GallerySlide[] = productShots.map((src) => ({ src, alt: rec.hero.name }));
+  if (hasSkinSignal(answers)) {
+    gallerySlides.push({ src: "/images/symptoms/itchy-skin-before-after.jpg", alt: "Bear's skin before and after Good for Pets", badge: "h", name: "Bear", caption: "Bear's skin, before & after Good for Pets" });
+  } else if (answers.symptoms.includes("gunky-ears")) {
+    gallerySlides.push({ src: "/images/symptoms/gunky-ears-before-after.jpg", alt: "Murphy's ear before and after Good for Pets", badge: "v", name: "Murphy", caption: "Murphy's ear, a 30-day transformation" });
+  }
+  const personalNote = rec.dietNote ?? rec.ageNote;
 
   // Personalised timeline: first significant change ~8 weeks; 90-day results guarantee.
   const now = new Date();
@@ -141,7 +152,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
               ))}
             </div>
             <p className="mx-auto mt-3 max-w-md text-center text-xs text-brand-ink/50">
-              Each of these can trace back to the gut — and every one fed into {dogPossessive} score above.
+              Each of these can trace back to the gut, and every one fed into {dogPossessive} score above.
             </p>
           </div>
         )}
@@ -160,7 +171,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         <section className="mt-8 overflow-hidden rounded-3xl bg-brand-ink p-6 text-white">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-sky">What's possible for {dog}</p>
           <h2 className="mt-2 text-2xl font-extrabold leading-tight">
-            Most owners see the first big change within <span className="text-brand-sky">8 weeks</span> — by {etaDate}.
+            Most owners see the first big change within <span className="text-brand-sky">8 weeks</span>, by {etaDate}.
           </h2>
           {rec.benefits.length > 0 && (
             <div className="mt-4">
@@ -196,7 +207,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="mt-5 flex items-center gap-4 rounded-2xl border-2 border-brand-sky bg-brand-sky/15 p-5">
             <span className="text-4xl">🛡️</span>
             <p className="text-base leading-snug text-white">
-              <strong className="text-brand-sky">90-day money-back guarantee.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund every penny — no quibbles.
+              <strong className="text-brand-sky">90-day money-back guarantee.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund every penny. No quibbles.
             </p>
           </div>
         </section>
@@ -214,10 +225,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             <div className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center">
               <p className="text-[15px] font-semibold text-brand-ink/85">
                 You've already tried {count} {count === 1 ? "thing" : "things"}
-                {spend ? ` and spent ${spend}` : ""} — {outcome}. You're not alone.
+                {spend ? ` and spent ${spend}` : ""}, {outcome}. You're not alone.
               </p>
               <p className="mt-2 text-sm italic text-brand-ink/70">
-                "My Frenchie had £120-a-month vet injections. Two months on Good for Pets and the change is amazing." — Shaun M.
+                "My Frenchie had £120-a-month vet injections. Two months on Good for Pets and the change is amazing."
+                <span className="mt-1 block text-xs font-semibold not-italic text-brand-ink/55">Shaun M.</span>
               </p>
             </div>
           );
@@ -228,28 +240,29 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
             {dogPossessive} recommended plan
           </div>
-          {/* Product hero — the sprinkle-into-food shot from the PDP */}
-          <img src={rec.hero.heroImage ?? rec.hero.image} alt={`${rec.hero.name} sprinkled into a food bowl`} className="block aspect-square w-full object-cover" />
+          {/* Swipeable product gallery (product shots + a matching real before/after) */}
+          <ProductGallery slides={gallerySlides} />
           <div className="p-6">
             <h2 className="text-center text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
             <p className="mt-1 text-center font-semibold text-brand-red">{rec.hero.tagline}</p>
-            <p className="mx-auto mt-3 max-w-xs rounded-xl bg-brand-cream p-2 text-center text-sm font-semibold text-brand-ink">
-              For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}
-            </p>
-            {(rec.dietNote || rec.ageNote) && (
-              <div className="mx-auto mt-3 max-w-sm space-y-1.5">
-                {rec.dietNote && <p className="flex gap-2 text-sm text-brand-ink/70"><span className="text-brand-red">✓</span>{rec.dietNote}</p>}
-                {rec.ageNote && <p className="flex gap-2 text-sm text-brand-ink/70"><span className="text-brand-red">✓</span>{rec.ageNote}</p>}
+            {/* Personalised note — one tidy block instead of a stack of ticks */}
+            <div className="mx-auto mt-4 max-w-sm rounded-xl bg-brand-cream p-3 text-center">
+              <p className="text-sm font-semibold text-brand-ink">For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}</p>
+              {personalNote && <p className="mt-1.5 text-xs leading-snug text-brand-ink/65">{personalNote}</p>}
+            </div>
+            {/* What's inside — scannable chips, not a wall of sentences */}
+            {rec.hero.highlights && rec.hero.highlights.length > 0 && (
+              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
+                {rec.hero.highlights.map((h) => (
+                  <span key={h} className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-2.5 py-1 text-xs font-semibold text-brand-ink/80">
+                    <span className="text-brand-red">✓</span>{h}
+                  </span>
+                ))}
               </div>
             )}
-            <ul className="mt-4 space-y-2">
-              {rec.hero.contents.map((c) => (
-                <li key={c} className="flex gap-2 text-[15px] text-brand-ink/80"><span className="text-brand-red">✓</span>{c}</li>
-              ))}
-            </ul>
             {rec.smallDog && (
               <p className="mt-4 rounded-xl bg-brand-sky/20 p-3 text-sm text-brand-ink/80">
-                🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong> — no giant tablet to crush. Just open and mix into food.
+                🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong>. No giant tablet to crush. Just open and mix into food.
               </p>
             )}
             {/* Buy box — plan toggle → quantity tiers → one-tap direct-to-cart */}
@@ -302,13 +315,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
               </div>
 
               {subscribe && (
-                <ul className="mt-3 grid gap-1 text-xs font-semibold text-brand-ink/70">
-                  {cadence && (
-                    <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Delivered {cadence} — timed to {dog}'s daily dose, so you never run out or overstock</li>
-                  )}
-                  <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> {CHECKOUT.subscription.firstOrderOff}% off your first order, then {CHECKOUT.subscription.futureOff}% off every future order</li>
-                  {CHECKOUT.subscription.freeShipping && <li className="flex items-center gap-1.5"><span className="text-brand-red">✓</span> Free shipping for life · pause or cancel anytime</li>}
-                </ul>
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-brand-cream/70 px-3 py-2.5 text-center text-xs font-semibold text-brand-ink/70">
+                  {cadence && <span>🔁 Delivered {cadence}</span>}
+                  <span>🏷️ {CHECKOUT.subscription.firstOrderOff}% off first order, {CHECKOUT.subscription.futureOff}% off after</span>
+                  {CHECKOUT.subscription.freeShipping && <span>🚚 Free shipping · cancel anytime</span>}
+                </div>
               )}
 
               <button ref={ctaRef} type="button" onClick={goToCheckout}
@@ -333,7 +344,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         <section className="mt-12">
           <h3 className="text-center text-xl font-extrabold text-brand-ink">Join thousands of UK dogs on Good for Pets</h3>
           <p className="mx-auto mt-2 max-w-md text-center text-sm text-brand-ink/60">
-            Real dogs, real homes, sent in by their owners — {dog} would be in good company.
+            Real dogs, real homes, sent in by their owners. {dog} would be in good company.
           </p>
           <div className="mt-5 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {UGC_WALL.map((src) => (
@@ -346,7 +357,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         {/* Matched proof */}
         {rec.proof.length > 0 && (
           <section className="mt-12">
-            <h3 className="text-center text-xl font-extrabold text-brand-ink">Dogs just like {dog} — in their owners' words</h3>
+            <h3 className="text-center text-xl font-extrabold text-brand-ink">Dogs just like {dog}, in their owners' words</h3>
             <div className="mt-5 space-y-4">
               {rec.proof.slice(0, 3).map((t) => (<TestimonialCard key={t.id} t={t} />))}
             </div>
@@ -360,7 +371,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             <div className="text-center sm:text-left">
               <h3 className="text-lg font-extrabold text-brand-ink">Guided by a vet, made in the UK</h3>
               <p className="mt-2 text-[15px] leading-relaxed text-brand-ink/75">
-                Dr Kishan Vara helps guide what goes into every product — evidence-based, cold-pressed so the bacteria stay alive, and made to GMP standards.
+                Dr Kishan Vara helps guide what goes into every product: evidence-based, cold-pressed so the bacteria stay alive, and made to GMP standards.
               </p>
               <p className="mt-2 text-sm font-bold text-brand-ink">Dr Kishan Vara</p>
               <p className="text-xs text-brand-ink/55">Veterinary surgeon, Royal Veterinary College · our veterinary partner</p>
@@ -375,7 +386,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <span className="flex-1">
             <span className="block font-extrabold">Still making up your mind? Here's one more reason.</span>
             <span className="mt-1 block text-sm text-white/75">
-              We give 51% of our profits to animal welfare — so helping {dog} helps thousands of rescue dogs too. See where it goes →
+              We give 51% of our profits to animal welfare, so helping {dog} helps thousands of rescue dogs too. See where it goes →
             </span>
             {donated && <span className="mt-1.5 block text-sm font-bold text-brand-sky">{donated} donated so far</span>}
           </span>
@@ -403,6 +414,73 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   );
 }
 
+interface GallerySlide {
+  src: string;
+  alt: string;
+  badge?: "h" | "v"; // real before/after slide → show Before/After labels (h=side-by-side, v=stacked)
+  name?: string; // the dog in a before/after photo (e.g. "Bear", "Murphy") → labelled on the image
+  caption?: string; // shown under the active slide
+}
+
+/** Swipeable product-image gallery (native scroll-snap, no library). */
+function ProductGallery({ slides }: { slides: GallerySlide[] }) {
+  const scroller = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const go = (i: number) => {
+    const el = scroller.current;
+    if (!el) return;
+    const clamped = Math.max(0, Math.min(slides.length - 1, i));
+    el.scrollTo({ left: clamped * el.clientWidth, behavior: "smooth" });
+  };
+  const onScroll = () => {
+    const el = scroller.current;
+    if (el) setActive(Math.round(el.scrollLeft / el.clientWidth));
+  };
+  const many = slides.length > 1;
+  return (
+    <div className="relative bg-brand-cream">
+      <div ref={scroller} onScroll={onScroll}
+        className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {slides.map((s, i) => {
+          const contain = s.src.endsWith(".png"); // transparent cutouts render padded, not full-bleed
+          return (
+            <div key={s.src} className="relative aspect-square w-full shrink-0 snap-center">
+              <img src={s.src} alt={s.alt} loading={i === 0 ? "eager" : "lazy"}
+                className={`h-full w-full ${contain ? "object-contain p-8" : "object-cover"}`} />
+              {s.badge && (
+                <>
+                  <span className="absolute left-3 top-3 rounded-md bg-black/60 px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white">Before</span>
+                  <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-[11px] font-bold uppercase tracking-wide text-white ${s.badge === "v" ? "bottom-3 left-3" : "right-3 top-3"}`}>After</span>
+                  {s.name && <span className="absolute right-3 bottom-3 rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-brand-ink shadow">{s.name}</span>}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {many && (
+        <>
+          <button type="button" onClick={() => go(active - 1)} aria-label="Previous image"
+            className={`absolute left-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-xl leading-none text-brand-ink shadow transition hover:bg-white sm:grid ${active === 0 ? "pointer-events-none opacity-0" : ""}`}>‹</button>
+          <button type="button" onClick={() => go(active + 1)} aria-label="Next image"
+            className={`absolute right-2 top-1/2 hidden h-9 w-9 -translate-y-1/2 place-items-center rounded-full bg-white/85 text-xl leading-none text-brand-ink shadow transition hover:bg-white sm:grid ${active === slides.length - 1 ? "pointer-events-none opacity-0" : ""}`}>›</button>
+          <div className="absolute inset-x-0 bottom-3 flex justify-center">
+            <div className="flex items-center gap-1.5 rounded-full bg-black/25 px-2.5 py-1.5 backdrop-blur-sm">
+              {slides.map((_, i) => (
+                <button key={i} type="button" onClick={() => go(i)} aria-label={`Go to image ${i + 1}`}
+                  className={`h-2 rounded-full transition-all ${i === active ? "w-5 bg-white" : "w-2 bg-white/55"}`} />
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+      {slides[active]?.caption && (
+        <p className="px-4 py-2 text-center text-xs font-medium text-brand-ink/60">{slides[active].caption}</p>
+      )}
+    </div>
+  );
+}
+
 function EmailCapture({ dog, profile }: { dog: string; profile: Record<string, unknown> }) {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
@@ -415,14 +493,14 @@ function EmailCapture({ dog, profile }: { dog: string; profile: Record<string, u
   if (sent) {
     return (
       <div className="mt-12 rounded-2xl bg-white p-5 text-center shadow-card">
-        <p className="font-semibold text-brand-ink">Done — {dog}'s plan is on its way. 🐾</p>
+        <p className="font-semibold text-brand-ink">Done! {dog}'s plan is on its way. 🐾</p>
       </div>
     );
   }
   return (
     <div className="mt-12 rounded-2xl bg-white p-5 shadow-card">
       <p className="text-center font-semibold text-brand-ink">Want {dog}'s plan emailed to you?</p>
-      <p className="mt-1 text-center text-sm text-brand-ink/50">Optional — no spam, unsubscribe anytime.</p>
+      <p className="mt-1 text-center text-sm text-brand-ink/50">Optional. No spam, unsubscribe anytime.</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === "Enter" && submit()}
           placeholder="you@email.com" className="flex-1 rounded-full border-2 border-brand-ink/15 bg-white px-4 py-3 outline-none focus:border-brand-red" />

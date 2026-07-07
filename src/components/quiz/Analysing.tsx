@@ -48,7 +48,7 @@ export function Analysing({ dog, onDone }: { dog: string; onDone: () => void }) 
         <div className="mx-auto mt-8 flex max-w-sm items-center gap-3 rounded-2xl bg-white p-3 shadow-card">
           <img src="/images/people/kishan.jpg" alt="Dr Kishan Vara, veterinary surgeon" className="h-12 w-12 shrink-0 rounded-full object-cover" />
           <p className="text-left text-sm text-brand-ink/70">
-            Checked against the method guided by our vet, <strong className="text-brand-ink">Dr Kishan Vara</strong> — veterinary surgeon, Royal Veterinary College.
+            Checked against the method guided by our vet, <strong className="text-brand-ink">Dr Kishan Vara</strong>: veterinary surgeon, Royal Veterinary College.
           </p>
         </div>
       </div>

@@ -68,10 +68,10 @@ export const SPEND_LABEL: Record<Spend, string> = {
 };
 
 export const SIZE_LABEL: Record<DogSize, string> = {
-  toy: "Toy — under 10kg",
-  small: "Small — 10–20kg",
-  medium: "Medium — 20–40kg",
-  large: "Large — over 40kg",
+  toy: "Toy (under 10kg)",
+  small: "Small (10–20kg)",
+  medium: "Medium (20–40kg)",
+  large: "Large (over 40kg)",
 };
 
 export const DOSE_BY_SIZE: Record<DogSize, string> = {
@@ -215,9 +215,9 @@ function rootCausesFor(a: QuizAnswers): RootCause[] {
 /** Age-tailored line for the recommendation — puppy/senior get a specific angle. */
 function ageNoteFor(a: QuizAnswers, dog: string): string | null {
   if (a.age === "puppy")
-    return `Starting young means you're building ${dog}'s gut foundation early — before small issues get a chance to settle in.`;
+    return `Starting young means you're building ${dog}'s gut foundation early, before small issues get a chance to settle in.`;
   if (a.age === "senior")
-    return `For a senior like ${dog}, gentle daily gut support is easy to keep up — and it works on digestion, coat and everyday comfort together.`;
+    return `For a senior like ${dog}, gentle daily gut support is easy to keep up, and it works on digestion, coat and everyday comfort together.`;
   return null;
 }
 
@@ -225,9 +225,9 @@ function ageNoteFor(a: QuizAnswers, dog: string): string | null {
 function dietNoteFor(a: QuizAnswers, dog: string): string | null {
   switch (a.diet) {
     case "raw":
-      return `Given ${dog}'s raw/fresh diet, a live probiotic is the natural partner — it helps the gut make the most of that fresh food.`;
+      return `Given ${dog}'s raw/fresh diet, a live probiotic is the natural partner. It helps the gut make the most of that fresh food.`;
     case "kibble":
-      return `Kibble-fed dogs especially miss out on live bacteria and prebiotics — dry food just doesn't carry them.`;
+      return `Kibble-fed dogs especially miss out on live bacteria and prebiotics. Dry food just doesn't carry them.`;
     case "wet":
       return `Wet food is gentle but low on live cultures, so a daily probiotic fills the gap.`;
     case "mix":
@@ -238,7 +238,7 @@ function dietNoteFor(a: QuizAnswers, dog: string): string | null {
 }
 
 const BENEFIT_BY_SYMPTOM: Partial<Record<SymptomTag, string>> = {
-  "paw-licking": "Less licking and chewing — calmer paws",
+  "paw-licking": "Less licking and chewing, calmer paws",
   "itchy-skin": "Less scratching, calmer skin",
   "gunky-ears": "Cleaner, fresher ears",
   tummy: "Firmer poos and a settled tummy",
@@ -279,7 +279,7 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
     beforeAfterKind: beforeAfterKind(a),
     gutScore: score,
     rating: ratingFor(score),
-    verdict: `We looked at everything you told us about ${dog} — ${list} — and ${
+    verdict: `We looked at everything you told us about ${dog} (${list}) and ${
       many ? "together they point" : "it points"
     } to one place: a gut that's ${ratingFor(score).toLowerCase()}.`,
     rootCauses: rootCausesFor(a),
