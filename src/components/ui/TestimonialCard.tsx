@@ -1,4 +1,4 @@
-import { type Testimonial, avatarFor } from "@/data/testimonials";
+import { type Testimonial } from "@/data/testimonials";
 import { StarRating } from "./StarRating";
 
 export function TestimonialCard({ t }: { t: Testimonial }) {
@@ -7,7 +7,7 @@ export function TestimonialCard({ t }: { t: Testimonial }) {
     .map((w) => w[0])
     .slice(0, 2)
     .join("");
-  const avatar = avatarFor(t.id);
+  const avatar = t.image;
   return (
     <figure className="flex h-full flex-col rounded-2xl bg-white p-5 shadow-card">
       <StarRating className="mb-3" />

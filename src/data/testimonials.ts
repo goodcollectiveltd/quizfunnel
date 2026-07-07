@@ -1,8 +1,9 @@
-// Real customer testimonials, ported from
-// company-context/testimonials/testimonials.md.
-// All are from public review platforms (Facebook / Trustpilot / Instagram).
+// Real customer testimonials, pulled from the "Let customers speak for us"
+// section on goodforpets.co/products/5-strain-probiotic. Each review is paired
+// with THAT customer's own dog photo (from the same product page), so every
+// card on the result page shows a correctly-correlated dog, not a stock stand-in.
 // `symptoms` tags map each quote to the quiz symptoms it proves, so the result
-// page and landers can auto-pull matching proof. IDs mirror the T## in the bank.
+// page auto-pulls matching proof. Photos live in /images/reviews/<name>.jpg.
 
 export type SymptomTag =
   | "paw-licking"
@@ -17,6 +18,7 @@ export interface Testimonial {
   quote: string;
   author: string;
   source: "Facebook" | "Trustpilot" | "Instagram";
+  image?: string; // the reviewer's own dog photo (real, correlated), /images/reviews/<name>.jpg
   rating?: 5;
   symptoms: SymptomTag[];
   // narrative angles used for objection-handling copy
@@ -25,245 +27,81 @@ export interface Testimonial {
 
 export const TESTIMONIALS: Testimonial[] = [
   {
-    id: "T01",
+    id: "R1",
     quote:
-      "I've tried a few over the past 3 years and no doubt these are the best — no paw licking or head shaking for the past 2 weeks after 4 weeks in. Happy dog 🦴💗",
-    author: "Elaine Stanley",
+      "I started these on the 24th January 2025. Today I actually saw a difference, no more paw licking or chewing. I cleaned her ears out today and nothing in there either. A much more relaxed and happy dog, thank you :)",
+    author: "Julie C",
     source: "Facebook",
+    image: "/images/reviews/julie.jpg",
+    rating: 5,
     symptoms: ["paw-licking", "gunky-ears"],
-    angles: ["tried-everything"],
   },
   {
-    id: "T03",
+    id: "R2",
     quote:
-      "My French bulldog still had to have monthly injections at the vets for so-called allergies at £120 a month. For the last two months I've been using Good for Pets probiotic and the change is amazing. If your dog has been licking and scratching — get Good for Pets, you won't regret it 👍",
-    author: "Shaun Mcnally",
+      "These are brilliant! I had my boy on the baked alternative prior to seeing these and they slightly helped his ear problems. These are another level completely. What a difference they have made. They also last me four weeks instead of three because he needs four of these instead of the five baked, so a wee save for my pocket too. Win, win!",
+    author: "Tanya S",
     source: "Facebook",
-    symptoms: ["paw-licking", "itchy-skin"],
-    angles: ["off-vet-meds"],
-  },
-  {
-    id: "T04",
-    quote:
-      "Absolutely brilliant. My 10-month staffie has allergies and wouldn't stop licking his feet. With these tablets every day, his white socks are back to being white and no more licking. Even told my vet what I was giving him.",
-    author: "Ness Tranter",
-    source: "Facebook",
-    symptoms: ["paw-licking", "itchy-skin"],
-  },
-  {
-    id: "T07",
-    quote:
-      "They really work. We used all sorts before and they were useless. Her ears are completely clean and don't smell at all. We started them in December 👌",
-    author: "Rob Chambers",
-    source: "Facebook",
-    symptoms: ["gunky-ears"],
-    angles: ["tried-everything"],
-  },
-  {
-    id: "T10",
-    quote:
-      "These are brilliant! I had my boy on the baked ones before — these are another level completely. What a difference they've made. They also last four weeks instead of three. Win, win!",
-    author: "Tanya Smith",
-    source: "Facebook",
+    image: "/images/reviews/tanya.jpg",
+    rating: 5,
     symptoms: ["gunky-ears"],
     angles: ["vs-baked"],
   },
   {
-    id: "T11",
+    id: "R3",
     quote:
-      "I use probiotics for my dog after 2 years of vets not solving the problem, and within weeks his skin totally cleared. So I'm afraid it ain't no scam.",
-    author: "Dawn Lister",
+      "I have been using 4 tablets a day for the past 3 weeks for my old English Mastiff and I can confirm that they have made a big difference already to ears, skin and paws. Also her poo is now normal. These tablets have been a blessing.",
+    author: "Nicola G",
     source: "Facebook",
-    symptoms: ["itchy-skin"],
-    angles: ["tried-everything", "off-vet-meds"],
-  },
-  {
-    id: "T13",
-    quote:
-      "An absolute game changer for my Frenchie — constantly chewing and licking his paws, scratching ears full of black gunk. I tried 3 other probiotics which did nothing. No more scratching or licking, his ears are very clean, and his eyes literally sparkle now.",
-    author: "Amanda Hall",
-    source: "Facebook",
-    symptoms: ["paw-licking", "gunky-ears", "tear-staining"],
-    angles: ["tried-everything"],
-  },
-  {
-    id: "T14",
-    quote:
-      "My Frenchie was constantly licking her paws, scratching her face and shaking her head. We tried so many things over the years for her yeasty skin — nothing worked, until now! After two months she's a completely different dog. No more itching, licking or head shaking.",
-    author: "Natalie Baptie-Wood",
-    source: "Trustpilot",
+    image: "/images/reviews/nicola.jpg",
     rating: 5,
-    symptoms: ["paw-licking", "itchy-skin", "gunky-ears"],
-    angles: ["tried-everything"],
+    symptoms: ["gunky-ears", "itchy-skin", "paw-licking", "tummy"],
   },
   {
-    id: "T15",
+    id: "R4",
     quote:
-      "My dog was on the baked chews but saw the advert saying non-baked is better. Been on these about 2½ weeks and saw a massive difference already. Since 2018 I've spent so much on steroids, ear drops and cleaning — now her ears are practically clean and no itching at all.",
-    author: "Katie Swales",
+      "This works. I tried everything. My bulldog, for 2 and a half years, licked her paws bald and raw every summer. Nothing worked, not even the Apoquel the vet gave me at £140 for 2 weeks. This was £33 including delivery and lasts about 2 months. It took a week to start working, but she hasn't picked at them for 3 weeks now.",
+    author: "Chris Brooks",
     source: "Facebook",
-    symptoms: ["gunky-ears", "itchy-skin"],
-    angles: ["vs-baked", "off-vet-meds"],
-  },
-  {
-    id: "T16",
-    quote:
-      "I was very dubious a probiotic could improve our pug Rolo's severe itching. A few months in he's like a new dog — his skin is no longer itchy, his fur is in great condition, and he's not hyperventilating in distress.",
-    author: "Caroline Louise",
-    source: "Facebook",
-    symptoms: ["itchy-skin"],
+    image: "/images/reviews/chris.jpg",
+    rating: 5,
+    symptoms: ["paw-licking", "itchy-skin"],
     angles: ["off-vet-meds", "tried-everything"],
   },
   {
-    id: "T17",
+    id: "R5",
     quote:
-      "Haggis the staffy was on Apoquel and a weekly injection for his allergies. I tried different chews, sprays and lotions — nothing worked and I was about to give up. Then I found these. WOWZERS — no more paw licking and chewing, no more gunky ears. A much happier dog.",
-    author: "Calum McAllion",
+      "My Staffy was eating cat poo at about 8 months old, his energy was gone and his breath turned to an ammonia smell. We were getting stressed for him. We got these tablets to help and he went from all of that, plus the chewing and licking his paws, to being a healthy, happy, energetic puppy! He's still on them and enjoys eating them. For anyone on the fence, no need to be skeptical.",
+    author: "Gareth Nibbs",
     source: "Facebook",
-    symptoms: ["paw-licking", "gunky-ears", "itchy-skin"],
-    angles: ["off-vet-meds", "tried-everything"],
-  },
-  {
-    id: "T20",
-    quote:
-      "What a difference this has made — she's only been on it 4 days and no more paw licking 🥳 and her eyes are not as weepy, no eating grass either. It's a win win all round.",
-    author: "Rosie",
-    source: "Trustpilot",
+    image: "/images/reviews/gareth.jpg",
     rating: 5,
-    symptoms: ["paw-licking", "tear-staining"],
+    symptoms: ["paw-licking", "tummy"],
   },
   {
-    id: "T21",
+    id: "R6",
     quote:
-      "Absolutely love these. Almost two weeks in and a vast improvement with my eldest Boston — she's hardly licking her paws and the discolouration is improving.",
-    author: "Richie Daiches Barlow",
-    source: "Facebook",
-    symptoms: ["paw-licking", "tear-staining"],
-  },
-  {
-    id: "T22",
-    quote:
-      "My English Pointer stopped scratching at her ears after just over two weeks. Will definitely be reordering 👍😊",
-    author: "Gaynor Marie Jones",
-    source: "Facebook",
-    symptoms: ["gunky-ears"],
-  },
-  {
-    id: "T23",
-    quote:
-      "These have worked brilliantly for my dachshund. He'd chewed his paws until they were open wounds. Vet-prescribed steroids and anti-anxiety meds did not work. These probiotics have been the answer for us!",
-    author: "Angela Woods",
-    source: "Facebook",
-    symptoms: ["paw-licking"],
-    angles: ["off-vet-meds", "small-dog"],
-  },
-  {
-    id: "T28",
-    quote:
-      "Had my staffy on these about 6 weeks. His stools were much better within a couple of weeks and his gunky ears have cleared up too! Setting up a subscription.",
-    author: "Nikki Curwen",
-    source: "Trustpilot",
-    rating: 5,
-    symptoms: ["tummy", "gunky-ears", "paw-licking"],
-  },
-  {
-    id: "T29",
-    quote:
-      "I've been using these over 3 weeks — they're brilliant, no more upset tummy or sloppy poos.",
-    author: "Lynn Stevenson",
-    source: "Facebook",
-    symptoms: ["tummy"],
-  },
-  {
-    id: "T30",
-    quote:
-      "Amazing stuff — both my Frenchies stopped the scratching, biting and licking their paws, and the No.2s are less messy, only after a month.",
-    author: "Peter Prokai",
-    source: "Facebook",
-    symptoms: ["tummy", "paw-licking"],
-  },
-  {
-    id: "T32",
-    quote:
-      "Finally crushed them and stirred into food till hidden. No more scooting, poo natural. Not quite a fortnight and marked improvements.",
-    author: "Danny Joseph Pinner",
-    source: "Facebook",
-    symptoms: ["scooting", "tummy"],
-    angles: ["small-dog"],
-  },
-  {
-    id: "T33",
-    quote:
-      "Amazing for my two Pomeranians. One had Alopecia X from a bad yeast infection — I'd tried many others but nothing helped until Good for Pets. He now has his full coat back.",
-    author: "Sherry Berry",
-    source: "Trustpilot",
-    rating: 5,
-    symptoms: ["itchy-skin"],
-    angles: ["tried-everything"],
-  },
-  {
-    id: "T34",
-    quote:
-      "Just over a month in and the difference is amazing. Her ears are the best they've been in a long time, she's no longer scooting or eating grass, and her eyes look so much clearer with way less tear staining. Full of energy again.",
+      "I've been giving the Good For Pets probiotic tablets to our yellow Lab for just over a month and the difference is incredible. Her ears are the best they've been in ages, no more scooting or grass eating, and her eyes are clearer with less tear staining. She's full of energy again, like a younger version of herself. Honestly can't recommend these enough.",
     author: "Elaine Conway",
     source: "Trustpilot",
+    image: "/images/reviews/elaine.jpg",
     rating: 5,
     symptoms: ["gunky-ears", "scooting", "tear-staining"],
   },
-  {
-    id: "T35",
-    quote:
-      "My cockapoo chewed her paws and scratched her ears constantly. We were told to give it a few months — after 12–14 weeks I noticed a huge change. She stopped chewing her paws, her ears are clean and healthy, regular solid poos, and she's a lot happier in herself.",
-    author: "Joanne East",
-    source: "Trustpilot",
-    rating: 5,
-    symptoms: ["paw-licking", "gunky-ears", "tummy"],
-  },
-  {
-    id: "T38",
-    quote:
-      "Amazing results. The only thing that has worked — and I feel like I've tried every potion.",
-    author: "Kim Berly",
-    source: "Facebook",
-    symptoms: ["itchy-skin", "paw-licking"],
-    angles: ["tried-everything"],
-  },
 ];
 
-export const byId = (id: string) => TESTIMONIALS.find((t) => t.id === id)!;
-
-// Real Good for Pets community dogs (from the image bank) used as review avatars
-// for authenticity. Breed-matched to the reviewer's dog where known; assigned so no
-// two reviews shown together on a lander share a dog. Not a claim that a given photo
-// is that specific reviewer's dog. Files: /images/reviews/<name>.jpg
-const AVATARS: Record<string, string> = {
-  T01: "springer",
-  T03: "chihuahua",
-  T04: "staffie",
-  T07: "retriever",
-  T10: "beagle",
-  T11: "collie",
-  T13: "cavapoo",
-  T14: "shihtzu",
-  T15: "jack-russell",
-  T16: "pug",
-  T17: "black-lab",
-  T20: "beagle2",
-  T21: "silver-lab",
-  T22: "choc-lab",
-  T23: "dachshund",
-  T28: "black-lab",
-  T29: "retriever",
-  T30: "cavapoo",
-  T32: "collie",
-  T33: "cavapoo",
-  T34: "retriever", // TODO: swap to Elaine Conway's real Labs once the file lands
-  T35: "cockapoo",
-  T38: "beagle2",
+// Short, punchy "tried everything" one-liner used on the landing hook only (no
+// correlated photo on file, so it renders with an initials avatar, never a
+// stand-in dog). Kept out of TESTIMONIALS so it can't surface as result proof.
+export const HOOK_TESTIMONIAL: Testimonial = {
+  id: "H1",
+  quote: "Amazing results. The only thing that has worked, and I feel like I've tried every potion.",
+  author: "Kim Berly",
+  source: "Facebook",
+  rating: 5,
+  symptoms: ["itchy-skin", "paw-licking"],
+  angles: ["tried-everything"],
 };
-
-export const avatarFor = (id: string): string | undefined =>
-  AVATARS[id] ? `/images/reviews/${AVATARS[id]}.jpg` : undefined;
 
 /** All testimonials tagged with a given symptom, in bank order. */
 export function testimonialsFor(symptom: SymptomTag): Testimonial[] {

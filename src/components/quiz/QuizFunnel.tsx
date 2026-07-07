@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
 import { StarRating } from "@/components/ui/StarRating";
 import { SYMPTOMS } from "@/data/symptoms";
-import { byId, avatarFor, type SymptomTag } from "@/data/testimonials";
+import { HOOK_TESTIMONIAL, type SymptomTag } from "@/data/testimonials";
 import {
   beforeAfterKind,
   emptyAnswers,
@@ -451,8 +451,8 @@ function FirstTimerCard({ dog, onNext }: { dog: string; onNext: () => void }) {
 /* ------------------------------- hook (landing) ------------------------------- */
 
 function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<QuizAnswers>) => void; onStart: () => void }) {
-  const t = byId("T38"); // short, punchy "tried everything" review
-  const avatar = avatarFor("T38");
+  const t = HOOK_TESTIMONIAL; // short, punchy "tried everything" review
+  const initials = t.author.split(" ").map((w) => w[0]).slice(0, 2).join("");
   return (
     <div className="min-h-dvh">
       <header className="container-page flex justify-center py-5"><Logo /></header>
@@ -469,7 +469,11 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
 
         {/* Testimonial (Mars-Men style) */}
         <figure className="mt-6 flex items-start gap-3 rounded-2xl bg-white p-4 shadow-card">
-          {avatar && <img src={avatar} alt={`${t.author}'s dog`} className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-brand-red/15" />}
+          {t.image ? (
+            <img src={t.image} alt={`${t.author}'s dog`} className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-brand-red/15" />
+          ) : (
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand-red/10 text-xs font-bold text-brand-red">{initials}</span>
+          )}
           <div>
             <StarRating className="mb-1" />
             <blockquote className="text-[15px] italic leading-snug text-brand-ink/90">"{t.quote}"</blockquote>
