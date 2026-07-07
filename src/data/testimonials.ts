@@ -1,9 +1,16 @@
 // Real customer testimonials, pulled from the "Let customers speak for us"
 // section on goodforpets.co/products/5-strain-probiotic. Each review is paired
-// with THAT customer's own dog photo (from the same product page), so every
-// card on the result page shows a correctly-correlated dog, not a stock stand-in.
+// with THAT customer's own dog photo (from the same product page).
 // `symptoms` tags map each quote to the quiz symptoms it proves, so the result
 // page auto-pulls matching proof. Photos live in /images/reviews/<name>.jpg.
+//
+// IMAGE RULES (credibility — do not break):
+//  1. A review that NAMES A BREED must show a correctly-matching dog. All six
+//     reals below do (bulldog, Mastiff, Staffy, yellow Labs, etc.).
+//  2. A review that names no breed may use a generic community-dog photo.
+//  3. Within a single flow (landing hook + result proof) no image is ever shown
+//     for two different reviews. Every image below is unique, and the hook photo
+//     (HOOK_TESTIMONIAL) is deliberately none of these six.
 
 export type SymptomTag =
   | "paw-licking"
@@ -90,14 +97,17 @@ export const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-// Short, punchy "tried everything" one-liner used on the landing hook only (no
-// correlated photo on file, so it renders with an initials avatar, never a
-// stand-in dog). Kept out of TESTIMONIALS so it can't surface as result proof.
+// Short, punchy "tried everything" one-liner used on the landing hook only.
+// Kim's review names no breed, so a generic community-dog photo is a fair
+// stand-in (rule 2 above). Its image (cavapoo) is intentionally NOT one of the
+// six result photos, so a full flow never shows the same dog for two reviews.
+// Kept out of TESTIMONIALS so it can't surface as result proof.
 export const HOOK_TESTIMONIAL: Testimonial = {
   id: "H1",
   quote: "Amazing results. The only thing that has worked, and I feel like I've tried every potion.",
   author: "Kim Berly",
   source: "Facebook",
+  image: "/images/reviews/cavapoo.jpg",
   rating: 5,
   symptoms: ["itchy-skin", "paw-licking"],
   angles: ["tried-everything"],
