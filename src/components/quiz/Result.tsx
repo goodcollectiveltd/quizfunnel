@@ -42,7 +42,6 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
   const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size, dogs) : null;
   const cadence = tier ? deliveryLabel(answers.size, tier.qty, dogs) : null;
-  const perDay = tier ? pricePerDay(subscribe ? tier.subPrice : tier.oncePrice, answers.size, tier.qty, dogs) : null;
   // Show the subscribe/one-time toggle whenever we have both price sets.
   const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
   const directReady = heroCheckoutReady(hc);
@@ -186,8 +185,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             <text x="20" y="28" fill="#fff" fillOpacity="0.5" fontSize="9">Thriving</text>
             <path d="M24,140 C 120,138 150,96 300,40 L300,152 L24,152 Z" fill="url(#proj-area)" />
             <path d="M24,140 C 120,138 150,96 300,40" fill="none" stroke="#95D8E9" strokeWidth="3" />
-            <circle cx="24" cy="140" r="5" fill="#EF3824" />
-            <text x="33" y="133" fill="#fff" fontSize="9" fontWeight="bold">You are here</text>
+            <rect x="14" y="111" width="72" height="15" rx="7.5" fill="#EF3824" />
+            <text x="50" y="121.5" fill="#fff" fontSize="8.5" fontWeight="bold" textAnchor="middle">You are here</text>
+            <line x1="34" y1="126" x2="26" y2="136" stroke="#EF3824" strokeWidth="1.5" />
+            <circle cx="24" cy="140" r="4.5" fill="#EF3824" stroke="#282C5F" strokeWidth="1.5" />
             <line x1="196" y1="34" x2="196" y2="152" stroke="#fff" strokeOpacity="0.25" strokeDasharray="3 3" />
             <circle cx="196" cy="74" r="5" fill="#fff" />
             <text x="24" y="168" fill="#fff" fillOpacity="0.5" fontSize="9">Today</text>
@@ -272,6 +273,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 {tiers.map((t, i) => {
                   const selected = i === tierIdx;
                   const price = subscribe ? t.subPrice : t.oncePrice;
+                  const tPerDay = pricePerDay(price, answers.size, t.qty, dogs);
                   return (
                     <button key={t.label} type="button" role="radio" aria-checked={selected} onClick={() => setTierIdx(i)}
                       className={`relative flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3.5 text-left transition-all ${selected ? "border-brand-red shadow-card" : "border-brand-ink/15 hover:border-brand-red/30"}`}>
@@ -281,20 +283,26 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                       <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 text-[11px] ${selected ? "border-brand-red bg-brand-red text-white" : "border-brand-ink/25"}`}>{selected && "✓"}</span>
                       <img src={rec.hero.image} alt="" aria-hidden className="h-10 w-10 shrink-0 object-contain" />
                       <span className="flex-1 font-extrabold text-brand-ink">{t.label}</span>
-                      <span className="text-right">
-                        <span className="block text-lg font-extrabold text-brand-ink">{price}</span>
-                        {t.compareAt && <span className="block text-xs font-semibold text-brand-ink/40 line-through">{t.compareAt}</span>}
+                      <span className="text-right leading-tight">
+                        {tPerDay ? (
+                          <>
+                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70">/day</span></span>
+                            <span className="block text-xs font-semibold text-brand-ink/55">
+                              {price} today{t.compareAt && <span className="ml-1 text-brand-ink/35 line-through">{t.compareAt}</span>}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="block text-lg font-extrabold text-brand-ink">{price}</span>
+                            {t.compareAt && <span className="block text-xs font-semibold text-brand-ink/40 line-through">{t.compareAt}</span>}
+                          </>
+                        )}
                       </span>
                     </button>
                   );
                 })}
               </div>
 
-              {perDay && (
-                <p className="mt-2.5 text-center text-sm font-semibold text-brand-ink">
-                  That's about <span className="text-brand-red">{perDay}/day</span> {dogs > 1 ? `for all ${dogs} dogs` : `for ${dog}`}.
-                </p>
-              )}
               {dogs > 1 && (
                 <p className="mt-1 text-center text-xs text-brand-ink/60">
                   🐾 You've got {dogs} dogs — that's a tub each. Dose each one for their size.
