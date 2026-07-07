@@ -265,8 +265,8 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
   const signals = signalsFor(a);
   const list = joinNouns(signals.length ? signals : symptoms.map((s) => s.noun));
   const many = signals.length > 1;
-  // Skin-led cases lead with the Skin & Gut Duo (Probio+ + Omega); it already
-  // contains everything, so there's no separate upsell. Gut-only cases lead with Probio+.
+  // Skin-led cases lead with the Skin & Gut Duo (5 Strain Probiotic+ + Omega); it already
+  // contains everything, so there's no separate upsell. Gut-only cases lead with 5 Strain Probiotic+.
   const skin = hasSkinSignal(a);
   return {
     symptoms,

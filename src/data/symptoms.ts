@@ -19,7 +19,7 @@ export interface Symptom {
   headline: string; // lander H1 — benefit-led
   subhead: string; // supporting promise
   agitate: string; // the pain, in the owner's world
-  recommend: ProductKey; // hero product for this symptom — always Probio+
+  recommend: ProductKey; // hero product for this symptom — always 5 Strain Probiotic+
   skinUpsell: boolean; // offer the Omega / Skin & Gut Duo add-on
   // 3:2 photo for the "Sound familiar?" section. Optional: scooting & tear-staining
   // have no usable stock, so those landers stay text-only there.

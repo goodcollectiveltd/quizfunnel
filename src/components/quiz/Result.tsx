@@ -42,7 +42,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
 
-  // Direct-to-cart checkout — product-aware: the hero may be Probio+ (gut) or the
+  // Direct-to-cart checkout — product-aware: the hero may be 5 Strain Probiotic+ (gut) or the
   // Skin & Gut Duo (skin), each with its own tiers, prices and Loop plans.
   const [subscribe, setSubscribe] = useState(CHECKOUT.defaultSubscribe);
   const [tierIdx, setTierIdx] = useState(CHECKOUT.defaultTierIndex);

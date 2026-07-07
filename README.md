@@ -33,14 +33,14 @@ npm run build    # type-check + production build
 |---|---|
 | `src/data/symptoms.ts` | The six symptoms. Each drives **both** a quiz option and its own `/relief/:slug` lander (headline, agitate copy, recommended product). Edit copy here. |
 | `src/data/testimonials.ts` | Real reviews from the testimonials bank, tagged by symptom so proof auto-matches. |
-| `src/data/products.ts` | Probio+ (hero) and Skin & Gut Duo. **PDP URLs + pricing live here.** |
+| `src/data/products.ts` | 5 Strain Probiotic+ (hero) and Skin & Gut Duo. **PDP URLs + pricing live here.** |
 | `src/lib/recommend.ts` | Quiz state + recommendation engine (product choice, matched/ranked proof). |
 | `src/components/quiz/` | The quiz state machine, steps, analysing beat, result page. |
 | `src/components/landers/SymptomLander.tsx` | One component renders all six landers from `symptoms.ts`. |
 
 ## Recommendation logic
 
-Every symptom in this cluster points at the hero **Probio+** (the cold-press
+Every symptom in this cluster points at the hero **5 Strain Probiotic+** (the cold-press
 mechanism that settles the whole skin–gut–ear loop). We upgrade to the **Skin &
 Gut Duo** only on a genuine skin/coat signal — itchy skin as the biggest issue,
 or itchy skin + paw-licking selected together. Small dogs get a sprinkle-capsule

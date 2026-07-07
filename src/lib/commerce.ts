@@ -58,7 +58,7 @@ const PROBIO: HeroCommerce = {
   fallbackPlanId: "693194785112", // 90-day (Loop default)
 };
 
-/** Skin & Gut Duo — Probio+ + Omega 3-6-9 (SKU SG1/2/3). */
+/** Skin & Gut Duo — 5 Strain Probiotic+ + Omega 3-6-9 (SKU SG1/2/3). */
 const DUO: HeroCommerce = {
   key: "skinGutDuo",
   unitLabel: "Pack",
