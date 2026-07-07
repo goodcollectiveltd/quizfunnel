@@ -228,7 +228,7 @@ export function QuizFunnel() {
         )}
         {key === "goal" && (
           <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
-            sub="There are no wrong answers — this is about the outcome you want back."
+            sub="Pick the one that matters most — just one. (We build the plan around everything else too.)"
             options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
         )}
         {key === "signs" && <SignsStep a={a} dog={dog} update={update} onNext={next} />}
