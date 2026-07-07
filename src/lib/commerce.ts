@@ -131,13 +131,18 @@ export function deliveryLabel(size: DogSize | null, qty: number, dogs = 1): stri
   return `every ${Math.round(days / 30)} months`;
 }
 
-/** Per-day cost for display: total price ÷ days the order lasts. Returns e.g. "£0.35". */
+/**
+ * Per-dog, per-day cost for display (price ÷ days the order lasts ÷ dogs). Returns
+ * e.g. "£0.35". Showing it PER DOG keeps the number stable whether it's 1 dog or 3 —
+ * it doesn't "jump" just because someone has more dogs.
+ */
 export function pricePerDay(priceStr: string, size: DogSize | null, tubs: number, dogs = 1): string | null {
   if (!size) return null;
   const amount = Number((priceStr || "").replace(/[^0-9.]/g, ""));
   const days = refillDays(size, tubs, dogs);
+  const n = Math.max(dogs, 1);
   if (!isFinite(amount) || amount <= 0 || days <= 0) return null;
-  return "£" + (amount / days).toFixed(2);
+  return "£" + (amount / days / n).toFixed(2);
 }
 
 export interface CartAdd {

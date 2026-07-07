@@ -228,7 +228,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         {/* Recommendation */}
         <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-card">
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
-            {dogPossessive} recommended plan
+            {dogs > 1 ? `${dog} & your pack's` : dogPossessive} recommended plan
           </div>
           {/* Product hero — the sprinkle-into-food shot from the PDP */}
           <img src={rec.hero.heroImage ?? rec.hero.image} alt={`${rec.hero.name} sprinkled into a food bowl`} className="block aspect-square w-full object-cover" />
@@ -286,7 +286,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                       <span className="text-right leading-tight">
                         {tPerDay ? (
                           <>
-                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70">/day</span></span>
+                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70">{dogs > 1 ? " /dog·day" : " /day"}</span></span>
                             <span className="block text-xs font-semibold text-brand-ink/55">
                               {price} today{t.compareAt && <span className="ml-1 text-brand-ink/35 line-through">{t.compareAt}</span>}
                             </span>
@@ -304,9 +304,9 @@ export function Result({ answers }: { answers: QuizAnswers }) {
               </div>
 
               {dogs > 1 && (
-                <p className="mt-1 text-center text-xs text-brand-ink/60">
-                  🐾 You've got {dogs} dogs — that's a tub each. Dose each one for their size.
-                </p>
+                <div className="mt-2.5 rounded-xl bg-brand-sky/15 p-3 text-center text-xs leading-relaxed text-brand-ink/75">
+                  🐾 <strong>For your {dogs} dogs:</strong> a tub each of the same daily formula — dose each one for their own size. We built this around {dog}; if your other {dogs === 2 ? "dog needs" : "dogs need"} something different, you can adjust at checkout.
+                </div>
               )}
 
               {subscribe && (
