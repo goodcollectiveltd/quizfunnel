@@ -15,7 +15,7 @@ export type Grass = "no" | "sometimes" | "often";
 export type Treats = "rarely" | "sometimes" | "daily";
 export type TriedOutcome = "none" | "temporary" | "faded" | "mixed";
 export type Spend = "lt50" | "50to200" | "200to500" | "gt500";
-export type Goal = "skin" | "ears" | "tummy" | "energy" | "all"; // the outcome they want most
+export type Goal = "paws" | "skin" | "ears" | "tummy" | "happy"; // the outcome they want most
 
 export interface QuizAnswers {
   dogName: string;

@@ -37,19 +37,28 @@ const DIET: { id: string; label: string }[] = [
 // The emotional lead-in: they name the outcome they want, then the "you're in the
 // right place" card confirms it (Mars-Men desire → validation beat).
 const GOALS: { id: Goal; label: string; emoji: string }[] = [
-  { id: "skin", label: "Calm, itch-free skin & paws", emoji: "🐾" },
+  { id: "paws", label: "No more paw licking or chewing", emoji: "🐾" },
+  { id: "skin", label: "Calm, itch-free skin", emoji: "🧴" },
   { id: "ears", label: "Clean, comfortable ears", emoji: "👂" },
-  { id: "tummy", label: "A settled tummy & firm poos", emoji: "💩" },
-  { id: "energy", label: "Their energy & spark back", emoji: "⚡" },
-  { id: "all", label: "Honestly — just my dog, happy again", emoji: "💛" },
+  { id: "tummy", label: "A settled tummy & firmer poos", emoji: "💩" },
+  { id: "happy", label: "Just my dog, happy again", emoji: "💛" },
 ];
 // One-liner the confirmation card echoes back, so it reflects what they just said.
 const GOAL_ECHO: Record<Goal, string> = {
+  paws: "No more licking, chewing, red-raw paws — calm and comfortable.",
   skin: "Calm, itch-free skin is absolutely within reach.",
   ears: "Clean, comfortable ears — yes, really.",
-  tummy: "A settled tummy and firm poos — that's the goal.",
-  energy: "That bright, playful spark can come back.",
-  all: "Your dog, back to themselves — that's exactly what this is for.",
+  tummy: "A settled tummy and firmer poos — that's the goal.",
+  happy: "Your dog, back to their bright, happy self.",
+};
+// Confirmation-card image per goal. Skin & ears are REAL customer before/afters;
+// the rest are honest aspirational shots (no fake before/after labelling).
+const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; caption: string }> = {
+  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, caption: "A real customer's dog — the same skin, before and after." },
+  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, caption: "A real customer's dog — the same ear, before and after." },
+  paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
+  tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
+  happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
 };
 // One "other signs" checklist replaces five separate single-select questions. Each
 // tick maps to the underlying answer field the scoring already uses (present → the
@@ -374,9 +383,9 @@ function InfoCard({ eyebrow, title, body, onNext }: { eyebrow: string; title: st
 }
 
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
-  const isEars = beforeAfterKind(a) === "ears";
-  const img = isEars ? "/images/symptoms/gunky-ears-before-after.jpg" : "/images/symptoms/itchy-skin-before-after.jpg";
-  const vertical = isEars;
+  // Match the image to the outcome they picked; fall back to the symptom-derived
+  // skin/ears before/after if they somehow reach here without a goal.
+  const card = a.goal ? GOAL_CARD[a.goal] : GOAL_CARD[beforeAfterKind(a)];
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
@@ -384,11 +393,15 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
       {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
-          <img src={img} alt="A real dog before and after Good for Pets" className="block w-full" />
-          <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
-          <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
+          <img src={card.img} alt={card.beforeAfter ? "A real dog before and after Good for Pets" : `The kind of turnaround owners see`} className="block w-full" />
+          {card.beforeAfter && (
+            <>
+              <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
+              <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
+            </>
+          )}
         </div>
-        <figcaption className="mt-2 text-xs text-brand-ink/55">A real customer's dog — {isEars ? "the same ear" : "the same skin"}, before and after.</figcaption>
+        <figcaption className="mt-2 text-xs text-brand-ink/55">{card.caption}</figcaption>
       </figure>
       <div className="mt-7 flex flex-col items-center gap-2">
         <StarRating />
