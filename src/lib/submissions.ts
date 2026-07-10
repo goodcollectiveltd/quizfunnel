@@ -12,7 +12,11 @@
  *   VITE_QUIZ_CAPTURE_URL  the backend endpoint that stores a submission
  */
 
-const CAPTURE_URL = import.meta.env.VITE_QUIZ_CAPTURE_URL as string | undefined;
+// GFP's live capture endpoint (Supabase Edge Function, same project as the
+// Landing Hub). Public URL, safe in the bundle; the table behind it is
+// RLS-locked. Prod-only so dev runs never write test rows.
+const DEFAULT_CAPTURE_URL = "https://uzpqgeodcbfgymipefwb.supabase.co/functions/v1/quiz-capture";
+const CAPTURE_URL = (import.meta.env.VITE_QUIZ_CAPTURE_URL as string | undefined) ?? (import.meta.env.PROD ? DEFAULT_CAPTURE_URL : undefined);
 const QUIZ_ID_KEY = "gfp_quiz_id";
 
 /**
