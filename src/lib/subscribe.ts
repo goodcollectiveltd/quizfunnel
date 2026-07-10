@@ -13,8 +13,10 @@
 
 const DEFAULT_PUBLIC_KEY = "USiMTH"; // GFP Klaviyo Site ID (matches the store's Klaviyo pixel account)
 const DEFAULT_LIST_ID = "TqNn3M"; // quiz finishers list
-const PUBLIC_KEY = (import.meta.env.VITE_KLAVIYO_PUBLIC_KEY as string | undefined) ?? (import.meta.env.PROD ? DEFAULT_PUBLIC_KEY : undefined);
-const LIST_ID = (import.meta.env.VITE_KLAVIYO_LIST_ID as string | undefined) ?? (import.meta.env.PROD ? DEFAULT_LIST_ID : undefined);
+// `||` (not ??): an env var set to "" in the host must fall through to the
+// default, otherwise an empty Netlify var silently disables the integration.
+const PUBLIC_KEY = (import.meta.env.VITE_KLAVIYO_PUBLIC_KEY as string | undefined) || (import.meta.env.PROD ? DEFAULT_PUBLIC_KEY : undefined);
+const LIST_ID = (import.meta.env.VITE_KLAVIYO_LIST_ID as string | undefined) || (import.meta.env.PROD ? DEFAULT_LIST_ID : undefined);
 
 export async function subscribeEmail(
   email: string,

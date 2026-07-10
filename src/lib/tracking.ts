@@ -16,8 +16,9 @@
 // records Purchase, so quiz-side events (PageView/Lead/InitiateCheckout) and the
 // store-side Purchase all land on one pixel for clean attribution.
 const DEFAULT_PIXEL_ID = "3813384208943708";
-const PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID as string | undefined) ?? (import.meta.env.PROD ? DEFAULT_PIXEL_ID : undefined);
-const GA4_ID = import.meta.env.VITE_GA4_ID as string | undefined;
+// `||` (not ??) so an empty env var in the host falls through to the default.
+const PIXEL_ID = (import.meta.env.VITE_META_PIXEL_ID as string | undefined) || (import.meta.env.PROD ? DEFAULT_PIXEL_ID : undefined);
+const GA4_ID = (import.meta.env.VITE_GA4_ID as string | undefined) || undefined;
 
 const ATTR_KEYS = [
   "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
@@ -25,12 +26,27 @@ const ATTR_KEYS = [
 ];
 const STORAGE_KEY = "gfp_attr";
 
-type AnyWin = typeof window & { fbq?: (...a: unknown[]) => void; gtag?: (...a: unknown[]) => void; dataLayer?: unknown[] };
+type PostHog = {
+  capture: (event: string, props?: Record<string, unknown>) => void;
+  register: (props: Record<string, unknown>) => void;
+};
+type AnyWin = typeof window & { fbq?: (...a: unknown[]) => void; gtag?: (...a: unknown[]) => void; dataLayer?: unknown[]; posthog?: PostHog };
 
 export function initTracking() {
   captureAttribution();
+  registerPostHogAttribution();
   initMetaPixel();
   initGA4();
+}
+
+/**
+ * Attach captured ad attribution (utm_*, fbclid, ad_id…) to PostHog as super
+ * properties, so every PostHog event — pageviews, autocapture, quiz steps — is
+ * tagged with the campaign it came from. PostHog itself is loaded from index.html.
+ */
+function registerPostHogAttribution() {
+  const attr = getAttribution();
+  if (Object.keys(attr).length) (window as AnyWin).posthog?.register(attr);
 }
 
 /** Persist ad-click / UTM params for the session so we can forward them to Shopify. */
@@ -101,7 +117,7 @@ function initGA4() {
 
 const META_STANDARD = new Set(["Lead", "InitiateCheckout", "CompleteRegistration", "ViewContent", "Purchase"]);
 
-/** Fire an event to Meta Pixel + GA4 (whichever are configured). */
+/** Fire an event to Meta Pixel + GA4 + PostHog (whichever are configured). */
 export function track(event: string, params: Record<string, unknown> = {}) {
   const w = window as AnyWin;
   if (PIXEL_ID && w.fbq) {
@@ -109,4 +125,7 @@ export function track(event: string, params: Record<string, unknown> = {}) {
     else w.fbq("trackCustom", event, params);
   }
   if (GA4_ID && w.gtag) w.gtag("event", event, params);
+  // PostHog runs in every environment (loaded in index.html), so quiz analytics
+  // and heatmaps work in dev too, not just prod like the Meta pixel.
+  w.posthog?.capture(event, params);
 }
