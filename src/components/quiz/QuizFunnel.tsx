@@ -27,16 +27,6 @@ const PROOF_CARD: Record<"skin" | "ears", { img: string; vertical?: boolean; nam
   skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
   ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
 };
-// One "other signs" checklist replaces five separate single-select questions. Each
-// tick maps to the underlying answer field the scoring already uses (present → the
-// concerning value; left unticked → null, i.e. no signal, no deduction).
-const SIGNS: { field: "breath" | "coat" | "energy" | "grass" | "wind"; value: string; label: string; emoji: string }[] = [
-  { field: "breath", value: "bad", label: "Bad or strong breath", emoji: "😮‍💨" },
-  { field: "coat", value: "dull", label: "A dull, dry or flaky coat", emoji: "🍂" },
-  { field: "energy", value: "low", label: "Low energy or a flat mood", emoji: "😔" },
-  { field: "grass", value: "often", label: "Eats grass a lot", emoji: "🌾" },
-  { field: "wind", value: "often", label: "Smelly, frequent wind", emoji: "💨" },
-];
 const STOOL: { id: Stool; label: string }[] = [
   { id: "runny", label: "5 · Loose or runny (watery, hard to pick up)" },
   { id: "soft", label: "4 · Slightly soft (loses shape, leaves residue)" },
@@ -277,12 +267,6 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
     const has = a.symptoms.includes(id);
     update({ symptoms: has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id] });
   };
-  // The everyday gut clues live on the same screen (one consolidated checklist
-  // instead of a second question) — each tick still maps to its scoring field.
-  const signOn = (s: (typeof SIGNS)[number]) => (a as unknown as Record<string, unknown>)[s.field] === s.value;
-  const toggleSign = (s: (typeof SIGNS)[number]) =>
-    update({ [s.field]: signOn(s) ? null : s.value } as Partial<QuizAnswers>);
-  const picked = a.symptoms.length + SIGNS.filter(signOn).length;
   return (
     <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar. We build the plan around all of it.">
       <div className="space-y-3">
@@ -290,14 +274,8 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
         ))}
       </div>
-      <p className="mb-3 mt-7 text-xs font-bold uppercase tracking-wide text-brand-ink/50">Any of these everyday clues too?</p>
-      <div className="space-y-3">
-        {SIGNS.map((s) => (
-          <OptionCard key={s.field} multi active={signOn(s)} emoji={s.emoji} label={s.label} onClick={() => toggleSign(s)} />
-        ))}
-      </div>
       <StickyNext disabled={a.symptoms.length === 0} onNext={onNext}
-        label={a.symptoms.length ? `Continue (${picked} selected)` : "Select at least one"} />
+        label={a.symptoms.length ? `Continue (${a.symptoms.length} selected)` : "Select at least one"} />
     </StepShell>
   );
 }
