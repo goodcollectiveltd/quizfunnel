@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
@@ -168,6 +168,13 @@ export function QuizFunnel() {
   const seq = useMemo(() => buildSequence(a), [a]);
   const key = seq[idx];
   const dog = a.dogName.trim() || "your dog";
+
+  // Per-step event → PostHog funnel shows question-by-question drop-off. Each step
+  // (questions AND the interstitial cards) fires once as it comes into view.
+  useEffect(() => {
+    if (phase !== "quiz") return;
+    track("quiz_step_viewed", { step: key, index: idx });
+  }, [phase, key, idx]);
 
   const next = () => {
     if (idx >= seq.length - 1) {
