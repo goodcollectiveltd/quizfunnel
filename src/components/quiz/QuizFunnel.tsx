@@ -9,10 +9,8 @@ import {
   beforeAfterKind,
   emptyAnswers,
   SIZE_LABEL,
-  type AgeBand,
   type DogSize,
   type Duration,
-  type Goal,
   type QuizAnswers,
   type Stool,
   type TriedOutcome,
@@ -23,42 +21,11 @@ import { track } from "@/lib/tracking";
 
 /* ------------------------------- options ------------------------------- */
 
-const AGES: { id: AgeBand; label: string }[] = [
-  { id: "puppy", label: "Puppy (under 1 year)" },
-  { id: "adult", label: "Adult (1 to 8 years)" },
-  { id: "senior", label: "Senior (8 years+)" },
-];
-const DIET: { id: string; label: string }[] = [
-  { id: "raw", label: "Raw or fresh food" },
-  { id: "kibble", label: "Dry kibble" },
-  { id: "wet", label: "Wet / tinned food" },
-  { id: "mix", label: "A mix" },
-];
-// The emotional lead-in: they name the outcome they want, then the "you're in the
-// right place" card confirms it (Mars-Men desire → validation beat).
-const GOALS: { id: Goal; label: string; emoji: string }[] = [
-  { id: "paws", label: "No more paw licking or chewing", emoji: "🐾" },
-  { id: "skin", label: "Calm, itch-free skin", emoji: "🧴" },
-  { id: "ears", label: "Clean, comfortable ears", emoji: "👂" },
-  { id: "tummy", label: "A settled tummy & firmer poos", emoji: "💩" },
-  { id: "happy", label: "Just my dog, happy again", emoji: "💛" },
-];
-// One-liner the confirmation card echoes back, so it reflects what they just said.
-const GOAL_ECHO: Record<Goal, string> = {
-  paws: "No more licking, chewing, red-raw paws. Just calm and comfortable.",
-  skin: "Calm, itch-free skin is absolutely within reach.",
-  ears: "Clean, comfortable ears. Yes, really.",
-  tummy: "A settled tummy and firmer poos. That's the goal.",
-  happy: "Your dog, back to their bright, happy self.",
-};
-// Confirmation-card image per goal. Skin & ears are REAL customer before/afters;
-// the rest are honest aspirational shots (no fake before/after labelling).
-const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }> = {
-  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
-  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
-  paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
-  tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
-  happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
+// Proof-card image derived from the symptoms they ticked (skin signal → Bear,
+// ears → Murphy). Both are REAL customer before/afters — no stock stand-ins.
+const PROOF_CARD: Record<"skin" | "ears", { img: string; vertical?: boolean; name: string; caption: string }> = {
+  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
+  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
 };
 // One "other signs" checklist replaces five separate single-select questions. Each
 // tick maps to the underlying answer field the scoring already uses (present → the
@@ -129,23 +96,26 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "size" | "age" | "symptoms" | "card-stat"
-  | "diet" | "goal" | "card-beforeafter"
-  | "signs" | "stool"
+  | "symptoms" | "card-beforeafter" | "size" | "stool"
   | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "size", "age", "symptoms", "diet", "goal",
-  "signs", "stool", "duration", "tried", "tried-outcome",
+  "symptoms", "size", "stool", "duration", "tried", "tried-outcome",
 ];
 
+/**
+ * Lean sequence — cut from 11 questions + 3 cards to 5 questions + 2 cards after
+ * the funnel ran 73% behind the advertorials. Removed: age & diet (only produced
+ * nice-to-have copy lines), goal (duplicated symptoms; the proof card now derives
+ * its image from symptoms), the "80% immune" education card (the ad already sold
+ * the mechanism — don't educate mid-funnel), and the separate signs checklist
+ * (merged into the symptoms screen — same fields, same scoring, one screen).
+ */
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
-    "size", "age", "symptoms", "card-stat",
-    // They name the outcome they want, then the before/after card confirms it.
-    "diet", "goal", "card-beforeafter",
-    "signs", "stool",
-    "duration", "tried",
+    // Symptoms first, then immediately validate with real proof (Bear/Murphy).
+    "symptoms", "card-beforeafter",
+    "size", "stool", "duration", "tried",
   ];
   const triedSomething = a.tried.some((t) => t !== "nothing");
   if (triedSomething) {
@@ -202,32 +172,12 @@ export function QuizFunnel() {
     <div className="min-h-dvh">
       <QuizHeader done={qDone} total={qTotal} onBack={back} />
       <main className="container-page pb-16 pt-6">
+        {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
         {key === "size" && (
           <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
             value={a.size} onPick={(v) => { update({ size: v as DogSize }); next(); }} />
         )}
-        {key === "age" && (
-          <SingleStep title={`How old is ${dog}?`} options={AGES}
-            value={a.age} onPick={(v) => { update({ age: v as AgeBand }); next(); }} />
-        )}
-        {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
-        {key === "card-stat" && (
-          <InfoCard eyebrow="Did you know?" title="80% of your dog's immune system lives in the gut."
-            body={`That's why skin, ears, coat, energy (even breath) so often trace back to gut balance. Let's check ${dog}'s.`}
-            onNext={next} />
-        )}
-        {key === "diet" && (
-          <SingleStep title={`What do you feed ${dog}?`} eyebrow="Diet & the gut"
-            rationale="Diet is the single biggest thing shaping the gut microbiome, so we start here."
-            options={DIET} value={a.diet} onPick={(v) => { update({ diet: v }); next(); }} />
-        )}
-        {key === "goal" && (
-          <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
-            sub="Pick the one that matters most. (We build the plan around everything else too.)"
-            options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
-        )}
-        {key === "signs" && <SignsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "stool" && (
           <SingleStep title={`And ${dog}'s poos, what are they usually like?`} eyebrow="The classic gut check"
             rationale="Using the Bristol Stool Chart for Dogs, type 3 (formed, moist, easy to pick up) is ideal."
@@ -327,6 +277,12 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
     const has = a.symptoms.includes(id);
     update({ symptoms: has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id] });
   };
+  // The everyday gut clues live on the same screen (one consolidated checklist
+  // instead of a second question) — each tick still maps to its scoring field.
+  const signOn = (s: (typeof SIGNS)[number]) => (a as unknown as Record<string, unknown>)[s.field] === s.value;
+  const toggleSign = (s: (typeof SIGNS)[number]) =>
+    update({ [s.field]: signOn(s) ? null : s.value } as Partial<QuizAnswers>);
+  const picked = a.symptoms.length + SIGNS.filter(signOn).length;
   return (
     <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar. We build the plan around all of it.">
       <div className="space-y-3">
@@ -334,8 +290,14 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
         ))}
       </div>
+      <p className="mb-3 mt-7 text-xs font-bold uppercase tracking-wide text-brand-ink/50">Any of these everyday clues too?</p>
+      <div className="space-y-3">
+        {SIGNS.map((s) => (
+          <OptionCard key={s.field} multi active={signOn(s)} emoji={s.emoji} label={s.label} onClick={() => toggleSign(s)} />
+        ))}
+      </div>
       <StickyNext disabled={a.symptoms.length === 0} onNext={onNext}
-        label={a.symptoms.length ? `Continue (${a.symptoms.length} selected)` : "Select at least one"} />
+        label={a.symptoms.length ? `Continue (${picked} selected)` : "Select at least one"} />
     </StepShell>
   );
 }
@@ -358,56 +320,21 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
   );
 }
 
-function SignsStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
-  const isOn = (s: (typeof SIGNS)[number]) => (a as unknown as Record<string, unknown>)[s.field] === s.value;
-  const toggle = (s: (typeof SIGNS)[number]) =>
-    update({ [s.field]: isOn(s) ? null : s.value } as Partial<QuizAnswers>);
-  const count = SIGNS.filter(isOn).length;
-  return (
-    <StepShell title={`Noticed any of these with ${dog} lately?`} eyebrow="Small signs, big clues"
-      sub="Tick any that ring true. These are the everyday clues to what the gut is doing.">
-      <div className="space-y-3">
-        {SIGNS.map((s) => (
-          <OptionCard key={s.field} multi active={isOn(s)} emoji={s.emoji} label={s.label} onClick={() => toggle(s)} />
-        ))}
-      </div>
-      <StickyNext disabled={false} onNext={onNext} label={count ? `Continue (${count} selected)` : "None of these, continue"} />
-    </StepShell>
-  );
-}
-
 /* ------------------------------- cards ------------------------------- */
 
-function InfoCard({ eyebrow, title, body, onNext }: { eyebrow: string; title: string; body: string; onNext: () => void }) {
-  return (
-    <div className="animate-fade-up pt-6 text-center">
-      <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">{eyebrow}</span>
-      <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">{title}</h1>
-      <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">{body}</p>
-      <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Continue →</Button></div>
-    </div>
-  );
-}
-
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
-  // Match the image to the outcome they picked; fall back to the symptom-derived
-  // skin/ears before/after if they somehow reach here without a goal.
-  const card = a.goal ? GOAL_CARD[a.goal] : GOAL_CARD[beforeAfterKind(a)];
+  // Real before/after matched to the symptoms they just ticked (skin → Bear, ears → Murphy).
+  const card = PROOF_CARD[beforeAfterKind(a)];
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
-      {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
-          <img src={card.img} alt={card.beforeAfter ? "A real dog before and after Good for Pets" : `The kind of turnaround owners see`} className="block w-full" />
-          {card.beforeAfter && (
-            <>
-              <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
-              <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
-              {card.name && <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-brand-ink shadow">{card.name}</span>}
-            </>
-          )}
+          <img src={card.img} alt="A real dog before and after Good for Pets" className="block w-full" />
+          <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
+          <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
+          <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-brand-ink shadow">{card.name}</span>
         </div>
         <figcaption className="mt-2 text-xs text-brand-ink/55">{card.caption}</figcaption>
       </figure>

@@ -107,6 +107,14 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const [donated, setDonated] = useState<string | null>(null);
   useEffect(() => { fetchDonationTotal().then(setDonated); }, []);
 
+  // "Show me the plan" under the verdict jumps straight to the buy box, so the
+  // offer is one tap from the diagnosis instead of four screens of scroll away.
+  const planRef = useRef<HTMLDivElement>(null);
+  const jumpToPlan = () => {
+    track("result_jump_to_plan", {});
+    planRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
   const ctaRef = useRef<HTMLButtonElement>(null);
   const [showSticky, setShowSticky] = useState(false);
@@ -132,6 +140,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           </span>
           <h1 className="mt-4 text-3xl font-extrabold leading-tight text-brand-ink">{rec.rating}</h1>
           <p className="mx-auto mt-3 max-w-md text-brand-ink/75">{rec.verdict}</p>
+          <button type="button" onClick={jumpToPlan}
+            className="mt-5 inline-flex items-center justify-center rounded-full bg-brand-red px-8 py-3.5 text-base font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
+            Show me {dogPossessive} plan ↓
+          </button>
+          <p className="mt-2 text-xs text-brand-ink/50">Or scroll for the full breakdown</p>
         </div>
 
         {/* Gut-health gauge */}
@@ -246,7 +259,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         })()}
 
         {/* Recommendation */}
-        <div className="mt-8 overflow-hidden rounded-3xl bg-white shadow-card">
+        <div ref={planRef} className="mt-8 scroll-mt-4 overflow-hidden rounded-3xl bg-white shadow-card">
           <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
             {dogPossessive} recommended plan
           </div>
