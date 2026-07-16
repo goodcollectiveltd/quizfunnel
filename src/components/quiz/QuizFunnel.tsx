@@ -11,6 +11,7 @@ import {
   SIZE_LABEL,
   type DogSize,
   type Duration,
+  type Goal,
   type QuizAnswers,
   type Stool,
   type TriedOutcome,
@@ -21,11 +22,32 @@ import { track } from "@/lib/tracking";
 
 /* ------------------------------- options ------------------------------- */
 
-// Proof-card image derived from the symptoms they ticked (skin signal → Bear,
-// ears → Murphy). Both are REAL customer before/afters — no stock stand-ins.
-const PROOF_CARD: Record<"skin" | "ears", { img: string; vertical?: boolean; name: string; caption: string }> = {
-  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
-  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
+// The emotional lead-in: she names the outcome she wants, then the "you're in the
+// right place" card validates it (Mars-Men desire → validation beat). Restored after
+// the length cut flattened the arc — informationally redundant, emotionally essential.
+const GOALS: { id: Goal; label: string; emoji: string }[] = [
+  { id: "paws", label: "No more paw licking or chewing", emoji: "🐾" },
+  { id: "skin", label: "Calm, itch-free skin", emoji: "🧴" },
+  { id: "ears", label: "Clean, comfortable ears", emoji: "👂" },
+  { id: "tummy", label: "A settled tummy & firmer poos", emoji: "💩" },
+  { id: "happy", label: "Just my dog, happy again", emoji: "💛" },
+];
+// One-liner the confirmation card echoes back, so it reflects what they just said.
+const GOAL_ECHO: Record<Goal, string> = {
+  paws: "No more licking, chewing, red-raw paws. Just calm and comfortable.",
+  skin: "Calm, itch-free skin is absolutely within reach.",
+  ears: "Clean, comfortable ears. Yes, really.",
+  tummy: "A settled tummy and firmer poos. That's the goal.",
+  happy: "Your dog, back to their bright, happy self.",
+};
+// Confirmation-card image per goal. Skin & ears are REAL customer before/afters
+// (Bear, Murphy); the rest are honest aspirational shots (no fake before/after labels).
+const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }> = {
+  skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
+  ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
+  paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
+  tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
+  happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
 };
 const STOOL: { id: Stool; label: string }[] = [
   { id: "runny", label: "5 · Loose or runny (watery, hard to pick up)" },
@@ -86,25 +108,23 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "symptoms" | "card-beforeafter" | "size" | "stool"
+  | "symptoms" | "goal" | "card-beforeafter" | "size" | "stool"
   | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "symptoms", "size", "stool", "duration", "tried", "tried-outcome",
+  "symptoms", "goal", "size", "stool", "duration", "tried", "tried-outcome",
 ];
 
 /**
- * Lean sequence — cut from 11 questions + 3 cards to 5 questions + 2 cards after
- * the funnel ran 73% behind the advertorials. Removed: age & diet (only produced
- * nice-to-have copy lines), goal (duplicated symptoms; the proof card now derives
- * its image from symptoms), the "80% immune" education card (the ad already sold
- * the mechanism — don't educate mid-funnel), and the separate signs checklist
- * (merged into the symptoms screen — same fields, same scoring, one screen).
+ * Lean sequence with the emotional arc intact: scene-led symptoms build tension,
+ * she states the desire (goal), the proof card validates it (Mars-Men beat), the
+ * clinical middle earns authority, and the tried sequence lands the vindication.
+ * Still cut from the original 11 questions + 3 cards: age & diet (nice-to-have
+ * copy only), the "80% immune" education card, and the separate signs checklist.
  */
 function buildSequence(a: QuizAnswers): StepKey[] {
   const seq: StepKey[] = [
-    // Symptoms first, then immediately validate with real proof (Bear/Murphy).
-    "symptoms", "card-beforeafter",
+    "symptoms", "goal", "card-beforeafter",
     "size", "stool", "duration", "tried",
   ];
   const triedSomething = a.tried.some((t) => t !== "nothing");
@@ -163,6 +183,11 @@ export function QuizFunnel() {
       <QuizHeader done={qDone} total={qTotal} onBack={back} />
       <main className="container-page pb-16 pt-6">
         {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
+        {key === "goal" && (
+          <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
+            sub="Pick the one that matters most. (We build the plan around everything else too.)"
+            options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
+        )}
         {key === "size" && (
           <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
@@ -301,19 +326,24 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
 /* ------------------------------- cards ------------------------------- */
 
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
-  // Real before/after matched to the symptoms they just ticked (skin → Bear, ears → Murphy).
-  const card = PROOF_CARD[beforeAfterKind(a)];
+  // Validate the desire she just stated: echo it back, then prove it's reachable.
+  // Image matches the goal; falls back to the symptom-derived real before/after.
+  const card = a.goal ? GOAL_CARD[a.goal] : GOAL_CARD[beforeAfterKind(a)];
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
-      <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">Calm paws, clean ears, your dog back to themselves. That's where this ends up.</p>
+      {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
-          <img src={card.img} alt="A real dog before and after Good for Pets" className="block w-full" />
-          <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
-          <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
-          <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-brand-ink shadow">{card.name}</span>
+          <img src={card.img} alt={card.beforeAfter ? "A real dog before and after Good for Pets" : "The kind of turnaround owners see"} className="block w-full" />
+          {card.beforeAfter && (
+            <>
+              <span className="absolute left-2 top-2 rounded-md bg-black/60 px-2 py-0.5 text-xs font-bold uppercase text-white">Before</span>
+              <span className={`absolute rounded-md bg-brand-red px-2 py-0.5 text-xs font-bold uppercase text-white ${card.vertical ? "bottom-2 left-2" : "right-2 top-2"}`}>After</span>
+              {card.name && <span className="absolute bottom-2 right-2 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-bold text-brand-ink shadow">{card.name}</span>}
+            </>
+          )}
         </div>
         <figcaption className="mt-2 text-xs text-brand-ink/55">{card.caption}</figcaption>
       </figure>
