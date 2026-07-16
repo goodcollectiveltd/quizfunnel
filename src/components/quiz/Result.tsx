@@ -190,6 +190,31 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           ))}
         </div>
 
+        {/* Feel-understood beat BEFORE the hope beat — one clean emotional arc
+            (pain → understood → what's possible → plan), not a saw-tooth. */}
+        {rec.triedBefore && (() => {
+          const count = answers.tried.filter((t) => t !== "nothing").length;
+          const spend = answers.spend ? SPEND_LABEL[answers.spend] : null;
+          const outcome = {
+            none: "and seen no real difference",
+            temporary: "but it keeps coming straight back",
+            faded: "but the results never lasted",
+            mixed: "with mixed results at best",
+          }[answers.triedOutcome ?? "temporary"];
+          return (
+            <div className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center">
+              <p className="text-[15px] font-semibold text-brand-ink/85">
+                You've already tried {count} {count === 1 ? "thing" : "things"}
+                {spend ? ` and spent ${spend}` : ""}, {outcome}. You're not alone.
+              </p>
+              <p className="mt-2 text-sm italic text-brand-ink/70">
+                "My Frenchie had £120-a-month vet injections. Two months on Good for Pets and the change is amazing."
+                <span className="mt-1 block text-xs font-semibold not-italic text-brand-ink/55">Shaun M.</span>
+              </p>
+            </div>
+          );
+        })()}
+
         {/* What's possible — personalised projection */}
         <section className="mt-8 overflow-hidden rounded-3xl bg-brand-ink p-6 text-white">
           <p className="text-xs font-bold uppercase tracking-wide text-brand-sky">What's possible for {dog}</p>
@@ -234,29 +259,6 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             </p>
           </div>
         </section>
-
-        {rec.triedBefore && (() => {
-          const count = answers.tried.filter((t) => t !== "nothing").length;
-          const spend = answers.spend ? SPEND_LABEL[answers.spend] : null;
-          const outcome = {
-            none: "and seen no real difference",
-            temporary: "but it keeps coming straight back",
-            faded: "but the results never lasted",
-            mixed: "with mixed results at best",
-          }[answers.triedOutcome ?? "temporary"];
-          return (
-            <div className="mx-auto mt-6 max-w-md rounded-2xl bg-brand-pink/30 p-4 text-center">
-              <p className="text-[15px] font-semibold text-brand-ink/85">
-                You've already tried {count} {count === 1 ? "thing" : "things"}
-                {spend ? ` and spent ${spend}` : ""}, {outcome}. You're not alone.
-              </p>
-              <p className="mt-2 text-sm italic text-brand-ink/70">
-                "My Frenchie had £120-a-month vet injections. Two months on Good for Pets and the change is amazing."
-                <span className="mt-1 block text-xs font-semibold not-italic text-brand-ink/55">Shaun M.</span>
-              </p>
-            </div>
-          );
-        })()}
 
         {/* Recommendation */}
         <div ref={planRef} className="mt-8 scroll-mt-4 overflow-hidden rounded-3xl bg-white shadow-card">

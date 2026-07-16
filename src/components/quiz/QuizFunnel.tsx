@@ -175,7 +175,7 @@ export function QuizFunnel() {
         )}
         {key === "duration" && (
           <SingleStep title="When did you first notice these changes?"
-            rationale="The longer it's been building, the more the gut has drifted out of balance."
+            rationale="Months of this wears you both down. It also tells us how settled the imbalance is."
             options={DURATION} value={a.duration} onPick={(v) => { update({ duration: v as Duration }); next(); }} />
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
@@ -307,6 +307,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
+      <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">Calm paws, clean ears, your dog back to themselves. That's where this ends up.</p>
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
           <img src={card.img} alt="A real dog before and after Good for Pets" className="block w-full" />
