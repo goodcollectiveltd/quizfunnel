@@ -117,15 +117,33 @@ function initGA4() {
 
 const META_STANDARD = new Set(["Lead", "InitiateCheckout", "CompleteRegistration", "ViewContent", "Purchase"]);
 
-/** Fire an event to Meta Pixel + GA4 + PostHog (whichever are configured). */
-export function track(event: string, params: Record<string, unknown> = {}) {
+/**
+ * Fire an event to Meta Pixel + GA4 + PostHog (whichever are configured).
+ *
+ * Pass `opts.eventID` to share a deduplication key with a matching server-side
+ * (Conversions API) event: Meta collapses the browser + server copies that carry
+ * the same event name and eventID into one, so a CAPI backup never double-counts.
+ * See the `Lead` handoff in Result.tsx → submissions.ts → the quiz-capture edge fn.
+ */
+export function track(event: string, params: Record<string, unknown> = {}, opts?: { eventID?: string }) {
   const w = window as AnyWin;
   if (PIXEL_ID && w.fbq) {
-    if (META_STANDARD.has(event)) w.fbq("track", event, params);
-    else w.fbq("trackCustom", event, params);
+    const meta = opts?.eventID ? { eventID: opts.eventID } : undefined;
+    if (META_STANDARD.has(event)) w.fbq("track", event, params, meta);
+    else w.fbq("trackCustom", event, params, meta);
   }
   if (GA4_ID && w.gtag) w.gtag("event", event, params);
   // PostHog runs in every environment (loaded in index.html), so quiz analytics
   // and heatmaps work in dev too, not just prod like the Meta pixel.
   w.posthog?.capture(event, params);
+}
+
+/**
+ * The Meta browser identifiers (_fbp click-cookie, _fbc from the ad click) so a
+ * server-side CAPI event can be matched to the same browser. Empty keys omitted.
+ */
+export function metaBrowserIds(): { fbp?: string; fbc?: string } {
+  const fbp = getCookie("_fbp");
+  const fbc = getCookie("_fbc");
+  return { ...(fbp ? { fbp } : {}), ...(fbc ? { fbc } : {}) };
 }
