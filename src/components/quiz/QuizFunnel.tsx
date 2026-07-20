@@ -3,14 +3,14 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
 import { StarRating } from "@/components/ui/StarRating";
-import { SYMPTOMS } from "@/data/symptoms";
+import { SYMPTOMS, symptomById } from "@/data/symptoms";
 import { HOOK_TESTIMONIAL, type SymptomTag } from "@/data/testimonials";
 import {
   beforeAfterKind,
   emptyAnswers,
+  primarySymptomOf,
   SIZE_LABEL,
   type DogSize,
-  type Duration,
   type Goal,
   type QuizAnswers,
   type Stool,
@@ -49,20 +49,72 @@ const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: bo
   tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
   happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
 };
-const STOOL: { id: Stool; label: string }[] = [
-  { id: "runny", label: "5 · Loose or runny (watery, hard to pick up)" },
-  { id: "soft", label: "4 · Slightly soft (loses shape, leaves residue)" },
-  { id: "ideal", label: "3 · Ideal (moist, formed, easy to pick up)" },
-  { id: "firm", label: "2 · Firm (formed but dry or cracked)" },
-  { id: "hard", label: "1 · Very hard or dry" },
-  { id: "varies", label: "Varies a lot" },
+// Plain-English stool check (was a 6-option numbered Bristol scale — too long and
+// clinical; same underlying values, so scoring is unchanged).
+const STOOL: { id: Stool; label: string; emoji: string }[] = [
+  { id: "ideal", label: "Usually solid and easy to pick up", emoji: "👍" },
+  { id: "soft", label: "Often soft or sloppy", emoji: "😕" },
+  { id: "runny", label: "Loose or runny more than not", emoji: "😖" },
+  { id: "varies", label: "Honestly, it varies a lot", emoji: "🎲" },
 ];
-const DURATION: { id: Duration; label: string }[] = [
-  { id: "lt1m", label: "Less than a month" },
-  { id: "1to6m", label: "1–6 months" },
-  { id: "6to12m", label: "6–12 months" },
-  { id: "gt1y", label: "Over a year" },
-];
+// One symptom-specific follow-up on their WORST symptom — the feel-understood
+// engine (Mars-Men style: options worded exactly how a sufferer talks).
+const SYMPTOM_DEPTH: Record<SymptomTag, { title: (dog: string) => string; options: { id: string; label: string }[] }> = {
+  "paw-licking": {
+    title: (d) => `When is ${d}'s licking at its worst?`,
+    options: [
+      { id: "evenings", label: "Evenings, that wet licking sound while you're trying to relax" },
+      { id: "after-walks", label: "After walks or being outside" },
+      { id: "night", label: "Through the night" },
+      { id: "constant", label: "Honestly, it's constant" },
+    ],
+  },
+  "itchy-skin": {
+    title: (d) => `How bad is ${d}'s scratching right now?`,
+    options: [
+      { id: "raw", label: "Scratched red or raw in places" },
+      { id: "daily", label: "Many times a day, every day" },
+      { id: "flares", label: "It comes in flares, some weeks are terrible" },
+      { id: "mild", label: "Mild, but it never fully goes" },
+    ],
+  },
+  "gunky-ears": {
+    title: (d) => `What are ${d}'s ears like at the moment?`,
+    options: [
+      { id: "gunk-smell", label: "Dark gunk and a smell that comes straight back" },
+      { id: "head-shaking", label: "Constant head shaking and scratching at them" },
+      { id: "recurring", label: "They clear up, then it's back within days" },
+      { id: "red-sore", label: "Red and sore inside" },
+    ],
+  },
+  tummy: {
+    title: (d) => `What does a bad day look like for ${d}'s tummy?`,
+    options: [
+      { id: "sloppy", label: "Sloppy or runny poos" },
+      { id: "wind", label: "Awful, room-clearing wind" },
+      { id: "grass", label: "Off their food, or eating grass" },
+      { id: "unpredictable", label: "We never know which day it'll be" },
+    ],
+  },
+  scooting: {
+    title: (d) => `How often is ${d} scooting?`,
+    options: [
+      { id: "daily", label: "Most days, across the carpet" },
+      { id: "weekly", label: "Most weeks" },
+      { id: "after-poos", label: "Mostly after poos" },
+      { id: "vet-glands", label: "We're at the vet for their glands regularly" },
+    ],
+  },
+  "tear-staining": {
+    title: (d) => `What are ${d}'s eyes like?`,
+    options: [
+      { id: "rusty", label: "Rusty stains that wiping never shifts" },
+      { id: "weepy", label: "Weepy most days" },
+      { id: "gunky", label: "Gunky corners every morning" },
+      { id: "worse", label: "Slowly getting worse" },
+    ],
+  },
+};
 const TRIED: { id: string; label: string }[] = [
   { id: "antibiotics", label: "Vet-prescribed antibiotics" },
   { id: "steroids", label: "Steroids / Apoquel" },
@@ -108,25 +160,24 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "symptoms" | "goal" | "card-beforeafter" | "size" | "stool"
-  | "duration" | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
+  | "symptoms" | "primary" | "depth" | "goal" | "card-beforeafter" | "size" | "stool"
+  | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "symptoms", "goal", "size", "stool", "duration", "tried", "tried-outcome",
+  "symptoms", "primary", "depth", "goal", "size", "stool", "tried", "tried-outcome",
 ];
 
 /**
- * Lean sequence with the emotional arc intact: scene-led symptoms build tension,
- * she states the desire (goal), the proof card validates it (Mars-Men beat), the
- * clinical middle earns authority, and the tried sequence lands the vindication.
- * Still cut from the original 11 questions + 3 cards: age & diet (nice-to-have
- * copy only), the "80% immune" education card, and the separate signs checklist.
+ * Symptom-led arc: tick the symptoms (tension) → name the WORST one (anchor) →
+ * one depth question in the sufferer's own words (feel understood) → state the
+ * desire (goal) → proof card validates it → size + poos (authority) → tried
+ * sequence (vindication). Duration was cut (told us little, asked a lot); the
+ * "primary" step is skipped when only one symptom is ticked.
  */
 function buildSequence(a: QuizAnswers): StepKey[] {
-  const seq: StepKey[] = [
-    "symptoms", "goal", "card-beforeafter",
-    "size", "stool", "duration", "tried",
-  ];
+  const seq: StepKey[] = ["symptoms"];
+  if (a.symptoms.length > 1) seq.push("primary");
+  seq.push("depth", "goal", "card-beforeafter", "size", "stool", "tried");
   const triedSomething = a.tried.some((t) => t !== "nothing");
   if (triedSomething) {
     // If they've tried something, ask how it went, then disarm it.
@@ -183,6 +234,20 @@ export function QuizFunnel() {
       <QuizHeader done={qDone} total={qTotal} onBack={back} />
       <main className="container-page pb-16 pt-6">
         {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
+        {key === "primary" && (
+          <SingleStep title="And which one is wearing you both down the most?" eyebrow="Let's zero in"
+            options={a.symptoms.map((id) => { const s = symptomById(id); return { id, label: s.label, emoji: s.emoji }; })}
+            value={a.primarySymptom} onPick={(v) => { update({ primarySymptom: v as SymptomTag }); next(); }} />
+        )}
+        {key === "depth" && (() => {
+          const primary = primarySymptomOf(a) ?? "paw-licking";
+          const depth = SYMPTOM_DEPTH[primary];
+          return (
+            <SingleStep title={depth.title(dog)} eyebrow="We hear this a lot"
+              options={depth.options} value={a.symptomSeverity}
+              onPick={(v) => { update({ symptomSeverity: v, primarySymptom: primary }); next(); }} />
+          );
+        })()}
         {key === "goal" && (
           <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
             sub="Pick the one that matters most. (We build the plan around everything else too.)"
@@ -194,14 +259,9 @@ export function QuizFunnel() {
             value={a.size} onPick={(v) => { update({ size: v as DogSize }); next(); }} />
         )}
         {key === "stool" && (
-          <SingleStep title={`And ${dog}'s poos, what are they usually like?`} eyebrow="The classic gut check"
-            rationale="Using the Bristol Stool Chart for Dogs, type 3 (formed, moist, easy to pick up) is ideal."
+          <SingleStep title={`And ${dog}'s poos, how are they most days?`} eyebrow="The classic gut check"
+            rationale="The clearest everyday window into gut balance."
             options={STOOL} value={a.stool} onPick={(v) => { update({ stool: v as Stool }); next(); }} />
-        )}
-        {key === "duration" && (
-          <SingleStep title="When did you first notice these changes?"
-            rationale="Months of this wears you both down. It also tells us how settled the imbalance is."
-            options={DURATION} value={a.duration} onPick={(v) => { update({ duration: v as Duration }); next(); }} />
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
         {key === "card-firsttimer" && <FirstTimerCard dog={dog} onNext={next} />}

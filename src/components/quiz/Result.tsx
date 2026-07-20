@@ -7,7 +7,6 @@ import { track, withAttribution, metaBrowserIds } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { saveSubmission, getQuizId } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
-import { CHECKOUT, heroCommerceFor, tierCartAdd, submitCartAdd, deliveryLabel, pricePerDay, heroCheckoutReady } from "@/lib/commerce";
 
 const VET_IMG = "/images/people/kishan.jpg";
 
@@ -42,25 +41,19 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
 
-  // Direct-to-cart checkout — product-aware: the hero may be 5 Strain Probiotic+ (gut) or the
-  // Skin & Gut Duo (skin), each with its own tiers, prices and Loop plans.
-  const [subscribe, setSubscribe] = useState(CHECKOUT.defaultSubscribe);
-  const [tierIdx, setTierIdx] = useState(CHECKOUT.defaultTierIndex);
-  const hc = heroCommerceFor(rec.hero.key);
-  const tiers = hc?.tiers ?? [];
-  const tier = tiers[tierIdx] ?? tiers[0] ?? null;
-  const heroPdpUrl = withAttribution(rec.hero.pdpUrl);
-  const heroAdd = hc && tier ? tierCartAdd(hc, tier, subscribe, answers.size) : null;
-  const cadence = tier ? deliveryLabel(answers.size, tier.qty) : null;
-  // Show the subscribe/one-time toggle whenever we have both price sets.
-  const showPlanToggle = tiers.length > 0 && tiers.every((t) => t.subPrice && t.oncePrice);
-  const directReady = heroCheckoutReady(hc);
-  // Add to the Shopify cart via a first-party form POST (so the subscription plan
-  // attaches), opening the store in a new tab so the result page stays put.
-  const goToCheckout = () => {
-    onBuy(`${rec.hero.name}${tier ? ` · ${tier.label}` : ""} · ${subscribe ? "sub" : "once"}`);
-    if (heroAdd) submitCartAdd(heroAdd, { target: "_blank" });
-    else window.open(heroPdpUrl, "_blank", "noopener");
+  // The result page is the CONCLUSION; the sale happens on the product page.
+  // (The native tier/subscribe buy box felt too basic next to the full PDP —
+  // Will's call, 13 Jul 2026.) The click-through carries ad attribution +
+  // _fbp/_fbc plus the quiz_id, so the store can stitch the journey.
+  const goToPdp = () => {
+    track("quiz_pdp_click", { product: rec.hero.name, gut_score: rec.gutScore });
+    try {
+      const u = new URL(withAttribution(rec.hero.pdpUrl));
+      u.searchParams.set("quiz_id", getQuizId());
+      window.open(u.toString(), "_blank", "noopener");
+    } catch {
+      window.open(rec.hero.pdpUrl, "_blank", "noopener");
+    }
   };
   // Dedup key shared by the browser Lead (below) and the server-side Lead sent
   // from the quiz-capture edge function, so the CAPI backup can't double-count.
@@ -68,7 +61,6 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   useEffect(() => {
     track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore }, { eventID: leadEventId });
   }, [answers.symptoms, rec.hero.name, rec.gutScore, leadEventId]);
-  const onBuy = (product: string) => track("InitiateCheckout", { content_name: product });
 
   // Everything from the quiz, saved onto the Klaviyo customer profile (incl. dog's name).
   const profile: Record<string, unknown> = {
@@ -76,6 +68,8 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     dog_size: answers.size,
     dog_age: answers.age,
     symptoms: rec.symptoms.map((s) => s.noun),
+    primary_symptom: answers.primarySymptom,
+    symptom_detail: answers.symptomSeverity,
     hoped_outcome: answers.goal,
     diet: answers.diet,
     treats: answers.treats,
@@ -304,69 +298,16 @@ export function Result({ answers }: { answers: QuizAnswers }) {
                 🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong>. No giant tablet to crush. Just open and mix into food.
               </p>
             )}
-            {/* Buy box — plan toggle → quantity tiers → one-tap direct-to-cart */}
+            {/* Conclusion CTA — the sale happens on the full product page */}
             <div className="mt-6">
-              {showPlanToggle && (
-                <div className="grid grid-cols-2 gap-1 rounded-full bg-brand-ink/5 p-1" role="tablist" aria-label="Purchase type">
-                  <button type="button" role="tab" aria-selected={subscribe} onClick={() => setSubscribe(true)}
-                    className={`rounded-full py-2 text-sm font-bold transition-all ${subscribe ? "bg-brand-red text-white shadow" : "text-brand-ink/60"}`}>
-                    Subscribe &amp; Save
-                  </button>
-                  <button type="button" role="tab" aria-selected={!subscribe} onClick={() => setSubscribe(false)}
-                    className={`rounded-full py-2 text-sm font-bold transition-all ${!subscribe ? "bg-brand-red text-white shadow" : "text-brand-ink/60"}`}>
-                    One-time
-                  </button>
-                </div>
-              )}
-
-              <div className="mt-3 space-y-2.5" role="radiogroup" aria-label="Choose quantity">
-                {tiers.map((t, i) => {
-                  const selected = i === tierIdx;
-                  const price = subscribe ? t.subPrice : t.oncePrice;
-                  const tPerDay = pricePerDay(price, answers.size, t.qty);
-                  return (
-                    <button key={t.label} type="button" role="radio" aria-checked={selected} onClick={() => setTierIdx(i)}
-                      className={`relative flex w-full items-center gap-3 rounded-2xl border-2 bg-white p-3.5 text-left transition-all ${selected ? "border-brand-red shadow-card" : "border-brand-ink/15 hover:border-brand-red/30"}`}>
-                      {t.badge && (
-                        <span className="absolute -top-2.5 right-3 rounded-full bg-brand-red px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">{t.badge}</span>
-                      )}
-                      <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 text-[11px] ${selected ? "border-brand-red bg-brand-red text-white" : "border-brand-ink/25"}`}>{selected && "✓"}</span>
-                      <img src={rec.hero.image} alt="" aria-hidden className="h-10 w-10 shrink-0 object-contain" />
-                      <span className="flex-1 font-extrabold text-brand-ink">{t.label}</span>
-                      <span className="text-right leading-tight">
-                        {tPerDay ? (
-                          <>
-                            <span className="block text-lg font-extrabold text-brand-ink">{tPerDay}<span className="text-sm font-bold text-brand-ink/70"> /day</span></span>
-                            <span className="block text-xs font-semibold text-brand-ink/55">
-                              {price} today{t.compareAt && <span className="ml-1 text-brand-ink/35 line-through">{t.compareAt}</span>}
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <span className="block text-lg font-extrabold text-brand-ink">{price}</span>
-                            {t.compareAt && <span className="block text-xs font-semibold text-brand-ink/40 line-through">{t.compareAt}</span>}
-                          </>
-                        )}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {subscribe && (
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-xl bg-brand-cream/70 px-3 py-2.5 text-center text-xs font-semibold text-brand-ink/70">
-                  {cadence && <span>🔁 Delivered {cadence}</span>}
-                  <span>🏷️ {CHECKOUT.subscription.firstOrderOff}% off first order, {CHECKOUT.subscription.futureOff}% off after</span>
-                  {CHECKOUT.subscription.freeShipping && <span>🚚 Free shipping · cancel anytime</span>}
-                </div>
-              )}
-
-              <button ref={ctaRef} type="button" onClick={goToCheckout}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-                {directReady && tier ? `Add ${tier.label} to basket →` : `Start ${dogPossessive} plan →`}
+              <button ref={ctaRef} type="button" onClick={goToPdp}
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
+                See {dogPossessive} full plan &amp; pricing →
               </button>
               <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-xs text-brand-ink/50">
                 <span>🛡️ 90-day money-back guarantee</span>
+                <span aria-hidden>·</span>
+                <span>🏷️ Subscribe &amp; Save 30% off first order</span>
                 <span aria-hidden>·</span>
                 <span>🚚 2–3 working days</span>
               </p>
@@ -442,9 +383,9 @@ export function Result({ answers }: { answers: QuizAnswers }) {
       {showSticky && (
         <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-brand-cream/95 backdrop-blur">
           <div className="container-page py-3">
-            <button type="button" onClick={goToCheckout}
+            <button type="button" onClick={goToPdp}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-              {directReady ? "Add to basket →" : `Start ${dogPossessive} plan →`}
+              See {dogPossessive} full plan →
             </button>
           </div>
         </div>

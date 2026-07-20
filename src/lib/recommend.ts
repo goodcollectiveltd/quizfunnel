@@ -22,6 +22,8 @@ export interface QuizAnswers {
   size: DogSize | null;
   age: AgeBand | null;
   symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan
+  primarySymptom: SymptomTag | null; // the one wearing them down most (anchor for the diagnosis)
+  symptomSeverity: string | null; // the depth answer for the primary symptom (their words)
   goal: Goal | null; // what they're hoping to get back for their dog (emotional lead-in)
   // Diet
   diet: string | null;
@@ -45,6 +47,8 @@ export const emptyAnswers: QuizAnswers = {
   size: null,
   age: null,
   symptoms: [],
+  primarySymptom: null,
+  symptomSeverity: null,
   goal: null,
   diet: null,
   treats: null,
@@ -112,7 +116,17 @@ export function hasSkinSignal(a: QuizAnswers): boolean {
   return a.symptoms.some((s) => SKIN_SYMPTOMS.includes(s));
 }
 
+/** The anchor symptom: their stated "worst one", validated against the ticked list. */
+export function primarySymptomOf(a: QuizAnswers): SymptomTag | null {
+  if (a.primarySymptom && a.symptoms.includes(a.primarySymptom)) return a.primarySymptom;
+  return a.symptoms[0] ?? null;
+}
+
 export function beforeAfterKind(a: QuizAnswers): "skin" | "ears" {
+  // The primary symptom leads the proof choice; fall back to any signal.
+  const primary = primarySymptomOf(a);
+  if (primary === "gunky-ears") return "ears";
+  if (primary && SKIN_SYMPTOMS.includes(primary)) return "skin";
   if (hasSkinSignal(a)) return "skin";
   if (a.symptoms.includes("gunky-ears")) return "ears";
   return "skin";
@@ -174,10 +188,17 @@ function ratingFor(score: number): string {
   return "Mildly out of balance";
 }
 
+/** Symptoms with the stated primary first, so the diagnosis leads with their worst one. */
+function orderedSymptoms(a: QuizAnswers): SymptomTag[] {
+  const primary = primarySymptomOf(a);
+  if (!primary) return a.symptoms;
+  return [primary, ...a.symptoms.filter((s) => s !== primary)];
+}
+
 /** The concerning signs we picked up — shown as evidence on the result. */
 function signalsFor(a: QuizAnswers): string[] {
   const out: string[] = [];
-  a.symptoms.forEach((id) => out.push(symptomById(id).noun));
+  orderedSymptoms(a).forEach((id) => out.push(symptomById(id).noun));
   if (a.breath === "bad") out.push("bad breath");
   if (a.coat === "dull") out.push("a dull or flaky coat");
   if (a.energy === "low") out.push("low energy or mood");
@@ -202,12 +223,11 @@ function rootCausesFor(a: QuizAnswers): RootCause[] {
       value: triedCount >= 2 ? "Surface fixes, not the cause" : "Untreated at the source",
     },
     {
-      label: "How long it's been building",
-      value:
-        a.duration === "gt1y" ? "Over a year"
-        : a.duration === "6to12m" ? "6–12 months"
-        : a.duration === "1to6m" ? "1–6 months"
-        : "Recent",
+      label: "Biggest flashpoint",
+      value: (() => {
+        const primary = primarySymptomOf(a);
+        return primary ? symptomById(primary).noun.replace(/^./, (c) => c.toUpperCase()) : "The symptom cluster";
+      })(),
     },
   ];
 }
@@ -259,7 +279,7 @@ function benefitsFor(a: QuizAnswers): string[] {
 }
 
 export function buildRecommendation(a: QuizAnswers): Recommendation {
-  const symptoms = a.symptoms.map(symptomById);
+  const symptoms = orderedSymptoms(a).map(symptomById);
   const dog = a.dogName.trim() || "your dog";
   const score = gutScore(a);
   const signals = signalsFor(a);
