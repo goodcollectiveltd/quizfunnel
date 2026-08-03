@@ -113,6 +113,20 @@ export const HOOK_TESTIMONIAL: Testimonial = {
   angles: ["tried-everything"],
 };
 
+// Scooting proof for the mid-quiz card on scooting-led entries (no real scooting
+// before/after photo exists, so the proof is a real review instead — from the
+// testimonials bank, T32). No photo on file → initials avatar, never a stand-in
+// dog. Kept out of TESTIMONIALS so the result page can't show it twice.
+export const SCOOTING_PROOF: Testimonial = {
+  id: "P1",
+  quote:
+    "Finally crushed them and stirred into food till hidden. No more scooting, poo natural. Not quite a fortnight and marked improvements.",
+  author: "Danny Joseph Pinner",
+  source: "Facebook",
+  rating: 5,
+  symptoms: ["scooting", "tummy"],
+};
+
 /** All testimonials tagged with a given symptom, in bank order. */
 export function testimonialsFor(symptom: SymptomTag): Testimonial[] {
   return TESTIMONIALS.filter((t) => t.symptoms.includes(symptom));

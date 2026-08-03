@@ -23,6 +23,10 @@ const GA4_ID = (import.meta.env.VITE_GA4_ID as string | undefined) || undefined;
 const ATTR_KEYS = [
   "utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term",
   "fbclid", "gclid", "ttclid", "ad_id", "campaign_id",
+  // Entry-symptom targeting: a symptom-led ad links ?symptom=<id> and the funnel
+  // continues that ad's thought (headline, checklist order, proof). Persisted so
+  // it survives the session and rides through to Klaviyo + the capture DB.
+  "symptom",
 ];
 const STORAGE_KEY = "gfp_attr";
 

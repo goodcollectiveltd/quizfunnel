@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
 import { StarRating } from "@/components/ui/StarRating";
 import { SYMPTOMS, symptomById } from "@/data/symptoms";
-import { HOOK_TESTIMONIAL, type SymptomTag } from "@/data/testimonials";
+import { HOOK_TESTIMONIAL, SCOOTING_PROOF, type SymptomTag } from "@/data/testimonials";
+import { TestimonialCard } from "@/components/ui/TestimonialCard";
+import { getAttribution } from "@/lib/tracking";
 import {
   beforeAfterKind,
   emptyAnswers,
@@ -20,6 +22,36 @@ import { Analysing } from "./Analysing";
 import { Result } from "./Result";
 import { track } from "@/lib/tracking";
 
+/* ------------------------- entry-symptom targeting ------------------------- */
+
+/**
+ * Symptom-led ads link with ?symptom=<id> (e.g. ?symptom=scooting) and the funnel
+ * continues that ad's thought (Nick's rule: never let them land and think "what
+ * did I click?"). Adapts the landing headline, floats + pre-ticks the symptom on
+ * the checklist, and unlocks symptom-specific proof. Falls back to the persisted
+ * attribution so a mid-quiz refresh keeps the targeting. Invalid values → null →
+ * the generic funnel, unchanged.
+ */
+function readEntrySymptom(): SymptomTag | null {
+  try {
+    const raw = new URLSearchParams(window.location.search).get("symptom") ?? getAttribution().symptom;
+    return SYMPTOMS.some((s) => s.id === raw) ? (raw as SymptomTag) : null;
+  } catch {
+    return null;
+  }
+}
+const ENTRY_SYMPTOM = readEntrySymptom();
+
+// The symptom phrase dropped into the landing H1 ("Find the root cause of your dog's …").
+const ENTRY_H1: Record<SymptomTag, string> = {
+  "paw-licking": "paw licking & chewing",
+  "itchy-skin": "itching & scratching",
+  "gunky-ears": "gunky, smelly ears",
+  tummy: "sloppy poos & unsettled tummy",
+  scooting: "scooting & gland trouble",
+  "tear-staining": "tear stains & weepy eyes",
+};
+
 /* ------------------------------- options ------------------------------- */
 
 // The emotional lead-in: she names the outcome she wants, then the "you're in the
@@ -32,17 +64,29 @@ const GOALS: { id: Goal; label: string; emoji: string }[] = [
   { id: "tummy", label: "A settled tummy & firmer poos", emoji: "💩" },
   { id: "happy", label: "Just my dog, happy again", emoji: "💛" },
 ];
+// Only offered when scooting is one of their symptoms — keeps the list tight for
+// everyone else, but a scooting-led visitor can name HER exact win.
+const SCOOTING_GOAL = { id: "scooting" as Goal, label: "No more scooting across the carpet", emoji: "🛋️" };
+function goalsFor(a: QuizAnswers): { id: Goal; label: string; emoji: string }[] {
+  if (!a.symptoms.includes("scooting")) return GOALS;
+  const out = [...GOALS];
+  out.splice(4, 0, SCOOTING_GOAL); // after tummy, before "happy again"
+  return out;
+}
 // One-liner the confirmation card echoes back, so it reflects what they just said.
 const GOAL_ECHO: Record<Goal, string> = {
   paws: "No more licking, chewing, red-raw paws. Just calm and comfortable.",
   skin: "Calm, itch-free skin is absolutely within reach.",
   ears: "Clean, comfortable ears. Yes, really.",
   tummy: "A settled tummy and firmer poos. That's the goal.",
+  scooting: "No more bum-shuffling across the carpet. Settled and comfortable again.",
   happy: "Your dog, back to their bright, happy self.",
 };
 // Confirmation-card image per goal. Skin & ears are REAL customer before/afters
-// (Bear, Murphy); the rest are honest aspirational shots (no fake before/after labels).
-const GOAL_CARD: Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }> = {
+// (Bear, Murphy); the rest are honest aspirational shots (no fake before/after
+// labels). Scooting has no photo asset at all, so its proof is a real REVIEW
+// (SCOOTING_PROOF) — rendered as a testimonial card instead of an image.
+const GOAL_CARD: Partial<Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }>> = {
   skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
   ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
   paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
@@ -193,7 +237,11 @@ function buildSequence(a: QuizAnswers): StepKey[] {
 export function QuizFunnel() {
   const [phase, setPhase] = useState<"hook" | "quiz" | "analysing" | "result">("hook");
   const [idx, setIdx] = useState(0);
-  const [a, setA] = useState<QuizAnswers>(emptyAnswers);
+  // A symptom-led entry arrives with their symptom already ticked — the ad told
+  // us; making her re-declare it is friction. She can untick it if we're wrong.
+  const [a, setA] = useState<QuizAnswers>(
+    ENTRY_SYMPTOM ? { ...emptyAnswers, symptoms: [ENTRY_SYMPTOM] } : emptyAnswers,
+  );
   const update = (patch: Partial<QuizAnswers>) => setA((p) => ({ ...p, ...patch }));
 
   const seq = useMemo(() => buildSequence(a), [a]);
@@ -251,7 +299,7 @@ export function QuizFunnel() {
         {key === "goal" && (
           <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
             sub="Pick the one that matters most. (We build the plan around everything else too.)"
-            options={GOALS} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
+            options={goalsFor(a)} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
         )}
         {key === "size" && (
           <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
@@ -352,10 +400,15 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
     const has = a.symptoms.includes(id);
     update({ symptoms: has ? a.symptoms.filter((s) => s !== id) : [...a.symptoms, id] });
   };
+  // A symptom-led entry sees their symptom first (and already ticked) — the
+  // checklist confirms the ad's promise instead of burying it mid-list.
+  const list = ENTRY_SYMPTOM
+    ? [symptomById(ENTRY_SYMPTOM), ...SYMPTOMS.filter((s) => s.id !== ENTRY_SYMPTOM)]
+    : SYMPTOMS;
   return (
     <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar. We build the plan around all of it.">
       <div className="space-y-3">
-        {SYMPTOMS.map((s) => (
+        {list.map((s) => (
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
         ))}
       </div>
@@ -387,13 +440,21 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
 
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
   // Validate the desire she just stated: echo it back, then prove it's reachable.
-  // Image matches the goal; falls back to the symptom-derived real before/after.
-  const card = a.goal ? GOAL_CARD[a.goal] : GOAL_CARD[beforeAfterKind(a)];
+  // Scooting has no photo proof, so it gets a real scooting REVIEW instead of an
+  // image. Otherwise the image matches the goal, falling back to the
+  // symptom-derived real before/after.
+  const scootingProof = a.goal === "scooting" || (!a.goal && primarySymptomOf(a) === "scooting");
+  const card = (a.goal && GOAL_CARD[a.goal]) || GOAL_CARD[beforeAfterKind(a)]!;
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
       {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
+      {scootingProof ? (
+        <div className="mx-auto mt-6 max-w-[340px] text-left">
+          <TestimonialCard t={SCOOTING_PROOF} />
+        </div>
+      ) : (
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
           <img src={card.img} alt={card.beforeAfter ? "A real dog before and after Good for Pets" : "The kind of turnaround owners see"} className="block w-full" />
@@ -407,6 +468,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
         </div>
         <figcaption className="mt-2 text-xs text-brand-ink/55">{card.caption}</figcaption>
       </figure>
+      )}
       <div className="mt-7 flex flex-col items-center gap-2">
         <StarRating />
         <p className="text-sm text-brand-ink/60">Just a few quick ones left to finish {dog}'s assessment.</p>
@@ -463,7 +525,7 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
         <div className="text-center">
           <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Free 60-second vet-guided assessment</span>
           <h1 className="mt-4 text-[30px] font-extrabold leading-[1.1] text-brand-ink sm:text-4xl">
-            Find the <span className="text-brand-red">root cause</span> of your dog's itching, licking &amp; gunky ears.
+            Find the <span className="text-brand-red">root cause</span> of your dog's {ENTRY_SYMPTOM ? ENTRY_H1[ENTRY_SYMPTOM] : "itching, licking & gunky ears"}.
           </h1>
           <p className="mx-auto mt-3 max-w-md text-brand-ink/70">
             This quick assessment reads your dog's symptoms, gut signals and history to work out what's really driving it, then shows you the exact plan. It usually starts in the gut.

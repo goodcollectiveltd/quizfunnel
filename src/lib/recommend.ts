@@ -15,7 +15,7 @@ export type Grass = "no" | "sometimes" | "often";
 export type Treats = "rarely" | "sometimes" | "daily";
 export type TriedOutcome = "none" | "temporary" | "faded" | "mixed";
 export type Spend = "lt50" | "50to200" | "200to500" | "gt500";
-export type Goal = "paws" | "skin" | "ears" | "tummy" | "happy"; // the outcome they want most
+export type Goal = "paws" | "skin" | "ears" | "tummy" | "scooting" | "happy"; // the outcome they want most
 
 export interface QuizAnswers {
   dogName: string;
@@ -209,7 +209,11 @@ function signalsFor(a: QuizAnswers): string[] {
 }
 
 function rootCausesFor(a: QuizAnswers): RootCause[] {
-  const mechanism = hasSkinSignal(a)
+  // Scooting-led cases get the stools → glands mechanism (glands empty naturally
+  // when the stools firm up) — far more specific than "digestive imbalance".
+  const mechanism = primarySymptomOf(a) === "scooting"
+    ? "Stools, glands & gut balance"
+    : hasSkinSignal(a)
     ? "The skin–gut axis"
     : a.symptoms.includes("gunky-ears")
     ? "Yeast & gut balance"

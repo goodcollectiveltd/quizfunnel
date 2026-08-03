@@ -3,7 +3,7 @@ import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, hasSkinSignal, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
-import { track, withAttribution, metaBrowserIds } from "@/lib/tracking";
+import { track, withAttribution, metaBrowserIds, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { saveSubmission, getQuizId } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
@@ -70,6 +70,8 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     symptoms: rec.symptoms.map((s) => s.noun),
     primary_symptom: answers.primarySymptom,
     symptom_detail: answers.symptomSeverity,
+    ad_symptom: getAttribution().symptom ?? null, // which symptom-led ad brought them in
+
     hoped_outcome: answers.goal,
     diet: answers.diet,
     treats: answers.treats,
