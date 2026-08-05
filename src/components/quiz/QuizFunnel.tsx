@@ -54,23 +54,35 @@ const ENTRY_H1: Record<SymptomTag, string> = {
 /* ------------------------------- options ------------------------------- */
 
 // The emotional lead-in: she names the outcome she wants, then the "you're in the
-// right place" card validates it (Mars-Men desire → validation beat). Restored after
-// the length cut flattened the arc — informationally redundant, emotionally essential.
-const GOALS: { id: Goal; label: string; emoji: string }[] = [
-  { id: "paws", label: "No more paw licking or chewing", emoji: "🐾" },
-  { id: "skin", label: "Calm, itch-free skin", emoji: "🧴" },
-  { id: "ears", label: "Clean, comfortable ears", emoji: "👂" },
-  { id: "tummy", label: "A settled tummy & firmer poos", emoji: "💩" },
-  { id: "happy", label: "Just my dog, happy again", emoji: "💛" },
-];
-// Only offered when scooting is one of their symptoms — keeps the list tight for
-// everyone else, but a scooting-led visitor can name HER exact win.
-const SCOOTING_GOAL = { id: "scooting" as Goal, label: "No more scooting across the carpet", emoji: "🛋️" };
+// right place" card validates it (Mars-Men desire → validation beat). The options
+// come ONLY from the symptoms she ticked — offering wins she never asked about
+// breaks the "we heard you" thread — plus the universal "happy again" closer.
+const GOAL_OPTION: Record<Goal, { label: string; emoji: string }> = {
+  paws: { label: "No more paw licking or chewing", emoji: "🐾" },
+  skin: { label: "Calm, itch-free skin", emoji: "🧴" },
+  ears: { label: "Clean, comfortable ears", emoji: "👂" },
+  tummy: { label: "A settled tummy & firmer poos", emoji: "💩" },
+  scooting: { label: "No more scooting across the carpet", emoji: "🛋️" },
+  tears: { label: "Clear, bright eyes", emoji: "✨" },
+  happy: { label: "Just my dog, happy again", emoji: "💛" },
+};
+const GOAL_BY_SYMPTOM: Record<SymptomTag, Goal> = {
+  "paw-licking": "paws",
+  "itchy-skin": "skin",
+  "gunky-ears": "ears",
+  tummy: "tummy",
+  scooting: "scooting",
+  "tear-staining": "tears",
+};
+/** Goal options for HER symptoms, in her tick order, closed by "happy again". */
 function goalsFor(a: QuizAnswers): { id: Goal; label: string; emoji: string }[] {
-  if (!a.symptoms.includes("scooting")) return GOALS;
-  const out = [...GOALS];
-  out.splice(4, 0, SCOOTING_GOAL); // after tummy, before "happy again"
-  return out;
+  const ids: Goal[] = [];
+  a.symptoms.forEach((s) => {
+    const g = GOAL_BY_SYMPTOM[s];
+    if (!ids.includes(g)) ids.push(g);
+  });
+  ids.push("happy");
+  return ids.map((id) => ({ id, ...GOAL_OPTION[id] }));
 }
 // One-liner the confirmation card echoes back, so it reflects what they just said.
 const GOAL_ECHO: Record<Goal, string> = {
@@ -79,6 +91,7 @@ const GOAL_ECHO: Record<Goal, string> = {
   ears: "Clean, comfortable ears. Yes, really.",
   tummy: "A settled tummy and firmer poos. That's the goal.",
   scooting: "No more bum-shuffling across the carpet. Settled and comfortable again.",
+  tears: "Brighter eyes, less staining. It's one of the first things owners notice.",
   happy: "Your dog, back to their bright, happy self.",
 };
 // Confirmation-card image per goal. Skin & ears are REAL customer before/afters

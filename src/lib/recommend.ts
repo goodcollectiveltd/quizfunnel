@@ -15,7 +15,7 @@ export type Grass = "no" | "sometimes" | "often";
 export type Treats = "rarely" | "sometimes" | "daily";
 export type TriedOutcome = "none" | "temporary" | "faded" | "mixed";
 export type Spend = "lt50" | "50to200" | "200to500" | "gt500";
-export type Goal = "paws" | "skin" | "ears" | "tummy" | "scooting" | "happy"; // the outcome they want most
+export type Goal = "paws" | "skin" | "ears" | "tummy" | "scooting" | "tears" | "happy"; // the outcome they want most
 
 export interface QuizAnswers {
   dogName: string;
@@ -268,12 +268,11 @@ export function buildRecommendation(a: QuizAnswers): Recommendation {
   const signals = signalsFor(a);
   const list = joinNouns(signals.length ? signals : symptoms.map((s) => s.noun));
   const many = signals.length > 1;
-  // Skin-led cases lead with the Skin & Gut Duo (5 Strain Probiotic+ + Omega); it already
-  // contains everything, so there's no separate upsell. Gut-only cases lead with 5 Strain Probiotic+.
-  const skin = hasSkinSignal(a);
+  // EVERY case recommends and links through to the hero, 5 Strain Probiotic+
+  // (Will, 13 Jul 2026) — the PDP handles any Duo/Omega upsell itself.
   return {
     symptoms,
-    hero: skin ? PRODUCTS.skinGutDuo : PRODUCTS.probioPlus,
+    hero: PRODUCTS.probioPlus,
     upsell: null,
     proof: matchedProof(a).slice(0, 6),
     smallDog: a.size === "toy" || a.size === "small",
