@@ -68,8 +68,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     dog_size: answers.size,
     dog_age: answers.age,
     symptoms: rec.symptoms.map((s) => s.noun),
-    primary_symptom: answers.primarySymptom,
-    symptom_detail: answers.symptomSeverity,
+    impact: answers.symptomSeverity, // the one emotional depth/impact answer
     ad_symptom: getAttribution().symptom ?? null, // which symptom-led ad brought them in
 
     hoped_outcome: answers.goal,

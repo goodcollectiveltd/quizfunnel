@@ -10,7 +10,6 @@ import { getAttribution } from "@/lib/tracking";
 import {
   beforeAfterKind,
   emptyAnswers,
-  primarySymptomOf,
   SIZE_LABEL,
   type DogSize,
   type Goal,
@@ -101,8 +100,17 @@ const STOOL: { id: Stool; label: string; emoji: string }[] = [
   { id: "runny", label: "Loose or runny more than not", emoji: "😖" },
   { id: "varies", label: "Honestly, it varies a lot", emoji: "🎲" },
 ];
-// One symptom-specific follow-up on their WORST symptom — the feel-understood
-// engine (Mars-Men style: options worded exactly how a sufferer talks).
+// The universal impact beat: one emotional question that treats everything she
+// ticked as ONE weight — no symptom ranked above another. Options in Sue's VOC.
+const IMPACT: { id: string; label: string; emoji: string }[] = [
+  { id: "constant-worry", label: "It's a constant background worry", emoji: "🫤" },
+  { id: "upsetting", label: "Some days it's honestly upsetting to watch", emoji: "💔" },
+  { id: "taken-over", label: "We've been fighting it for ages, it's exhausting", emoji: "😮‍💨" },
+  { id: "early", label: "Mild so far, I want it sorted before it grows", emoji: "🌱" },
+];
+// Ad-continuity variant of the impact beat: when she arrived from a symptom ad
+// (?symptom=), the question speaks that ad's language (Mars-Men style, sufferer
+// wording). Used ONLY for the entry symptom — never to rank her list.
 const SYMPTOM_DEPTH: Record<SymptomTag, { title: (dog: string) => string; options: { id: string; label: string }[] }> = {
   "paw-licking": {
     title: (d) => `When is ${d}'s licking at its worst?`,
@@ -204,24 +212,22 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
 /* ------------------------------- engine ------------------------------- */
 
 type StepKey =
-  | "symptoms" | "primary" | "depth" | "goal" | "card-beforeafter" | "size" | "stool"
+  | "symptoms" | "impact" | "goal" | "card-beforeafter" | "size" | "stool"
   | "tried" | "tried-outcome" | "card-tried" | "card-firsttimer";
 
 const QUESTION_KEYS: StepKey[] = [
-  "symptoms", "primary", "depth", "goal", "size", "stool", "tried", "tried-outcome",
+  "symptoms", "impact", "goal", "size", "stool", "tried", "tried-outcome",
 ];
 
 /**
- * Symptom-led arc: tick the symptoms (tension) → name the WORST one (anchor) →
- * one depth question in the sufferer's own words (feel understood) → state the
- * desire (goal) → proof card validates it → size + poos (authority) → tried
- * sequence (vindication). Duration was cut (told us little, asked a lot); the
- * "primary" step is skipped when only one symptom is ticked.
+ * Cold-traffic acquisition arc — every step buys conversion, and no symptom is
+ * ranked above another: tick the symptoms (tension) → ONE emotional impact beat
+ * that treats everything ticked as one weight (ad-specific wording when she came
+ * from a symptom ad) → state the desire (goal) → proof card validates it →
+ * size + poos (authority) → tried sequence (vindication).
  */
 function buildSequence(a: QuizAnswers): StepKey[] {
-  const seq: StepKey[] = ["symptoms"];
-  if (a.symptoms.length > 1) seq.push("primary");
-  seq.push("depth", "goal", "card-beforeafter", "size", "stool", "tried");
+  const seq: StepKey[] = ["symptoms", "impact", "goal", "card-beforeafter", "size", "stool", "tried"];
   const triedSomething = a.tried.some((t) => t !== "nothing");
   if (triedSomething) {
     // If they've tried something, ask how it went, then disarm it.
@@ -282,18 +288,18 @@ export function QuizFunnel() {
       <QuizHeader done={qDone} total={qTotal} onBack={back} />
       <main className="container-page pb-16 pt-6">
         {key === "symptoms" && <SymptomsStep a={a} update={update} onNext={next} />}
-        {key === "primary" && (
-          <SingleStep title="And which one is wearing you both down the most?" eyebrow="Let's zero in"
-            options={a.symptoms.map((id) => { const s = symptomById(id); return { id, label: s.label, emoji: s.emoji }; })}
-            value={a.primarySymptom} onPick={(v) => { update({ primarySymptom: v as SymptomTag }); next(); }} />
-        )}
-        {key === "depth" && (() => {
-          const primary = primarySymptomOf(a) ?? "paw-licking";
-          const depth = SYMPTOM_DEPTH[primary];
-          return (
-            <SingleStep title={depth.title(dog)} eyebrow="We hear this a lot"
-              options={depth.options} value={a.symptomSeverity}
-              onPick={(v) => { update({ symptomSeverity: v, primarySymptom: primary }); next(); }} />
+        {key === "impact" && (() => {
+          // Ad-continuity wording when she came from a symptom ad AND kept that
+          // symptom ticked; otherwise the universal all-symptoms impact beat.
+          const entryDepth = ENTRY_SYMPTOM && a.symptoms.includes(ENTRY_SYMPTOM) ? SYMPTOM_DEPTH[ENTRY_SYMPTOM] : null;
+          return entryDepth ? (
+            <SingleStep title={entryDepth.title(dog)} eyebrow="We hear this a lot"
+              options={entryDepth.options} value={a.symptomSeverity}
+              onPick={(v) => { update({ symptomSeverity: v }); next(); }} />
+          ) : (
+            <SingleStep title="How much is it affecting you both, day to day?" eyebrow="Be honest"
+              options={IMPACT} value={a.symptomSeverity}
+              onPick={(v) => { update({ symptomSeverity: v }); next(); }} />
           );
         })()}
         {key === "goal" && (
@@ -443,7 +449,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
   // Scooting has no photo proof, so it gets a real scooting REVIEW instead of an
   // image. Otherwise the image matches the goal, falling back to the
   // symptom-derived real before/after.
-  const scootingProof = a.goal === "scooting" || (!a.goal && primarySymptomOf(a) === "scooting");
+  const scootingProof = a.goal === "scooting" || (!a.goal && a.symptoms.length === 1 && a.symptoms[0] === "scooting");
   const card = (a.goal && GOAL_CARD[a.goal]) || GOAL_CARD[beforeAfterKind(a)]!;
   return (
     <div className="animate-fade-up pt-6 text-center">

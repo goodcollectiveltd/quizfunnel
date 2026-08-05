@@ -21,9 +21,8 @@ export interface QuizAnswers {
   dogName: string;
   size: DogSize | null;
   age: AgeBand | null;
-  symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan
-  primarySymptom: SymptomTag | null; // the one wearing them down most (anchor for the diagnosis)
-  symptomSeverity: string | null; // the depth answer for the primary symptom (their words)
+  symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan, none ranked above another
+  symptomSeverity: string | null; // the one emotional depth/impact answer (their words)
   goal: Goal | null; // what they're hoping to get back for their dog (emotional lead-in)
   // Diet
   diet: string | null;
@@ -47,7 +46,6 @@ export const emptyAnswers: QuizAnswers = {
   size: null,
   age: null,
   symptoms: [],
-  primarySymptom: null,
   symptomSeverity: null,
   goal: null,
   diet: null,
@@ -116,17 +114,7 @@ export function hasSkinSignal(a: QuizAnswers): boolean {
   return a.symptoms.some((s) => SKIN_SYMPTOMS.includes(s));
 }
 
-/** The anchor symptom: their stated "worst one", validated against the ticked list. */
-export function primarySymptomOf(a: QuizAnswers): SymptomTag | null {
-  if (a.primarySymptom && a.symptoms.includes(a.primarySymptom)) return a.primarySymptom;
-  return a.symptoms[0] ?? null;
-}
-
 export function beforeAfterKind(a: QuizAnswers): "skin" | "ears" {
-  // The primary symptom leads the proof choice; fall back to any signal.
-  const primary = primarySymptomOf(a);
-  if (primary === "gunky-ears") return "ears";
-  if (primary && SKIN_SYMPTOMS.includes(primary)) return "skin";
   if (hasSkinSignal(a)) return "skin";
   if (a.symptoms.includes("gunky-ears")) return "ears";
   return "skin";
@@ -188,17 +176,11 @@ function ratingFor(score: number): string {
   return "Mildly out of balance";
 }
 
-/** Symptoms with the stated primary first, so the diagnosis leads with their worst one. */
-function orderedSymptoms(a: QuizAnswers): SymptomTag[] {
-  const primary = primarySymptomOf(a);
-  if (!primary) return a.symptoms;
-  return [primary, ...a.symptoms.filter((s) => s !== primary)];
-}
-
-/** The concerning signs we picked up — shown as evidence on the result. */
+/** The concerning signs we picked up — shown as evidence on the result. In HER
+ * tick order: no symptom is ranked above another. */
 function signalsFor(a: QuizAnswers): string[] {
   const out: string[] = [];
-  orderedSymptoms(a).forEach((id) => out.push(symptomById(id).noun));
+  a.symptoms.forEach((id) => out.push(symptomById(id).noun));
   if (a.breath === "bad") out.push("bad breath");
   if (a.coat === "dull") out.push("a dull or flaky coat");
   if (a.energy === "low") out.push("low energy or mood");
@@ -209,14 +191,14 @@ function signalsFor(a: QuizAnswers): string[] {
 }
 
 function rootCausesFor(a: QuizAnswers): RootCause[] {
-  // Scooting-led cases get the stools → glands mechanism (glands empty naturally
-  // when the stools firm up) — far more specific than "digestive imbalance".
-  const mechanism = primarySymptomOf(a) === "scooting"
-    ? "Stools, glands & gut balance"
-    : hasSkinSignal(a)
+  // Most specific mechanism available for their mix; scooting-only cases get the
+  // stools → glands story (glands empty naturally when the stools firm up).
+  const mechanism = hasSkinSignal(a)
     ? "The skin–gut axis"
     : a.symptoms.includes("gunky-ears")
     ? "Yeast & gut balance"
+    : a.symptoms.includes("scooting")
+    ? "Stools, glands & gut balance"
     : "Digestive imbalance";
   const triedCount = a.tried.filter((t) => t !== "nothing").length;
   return [
@@ -227,11 +209,8 @@ function rootCausesFor(a: QuizAnswers): RootCause[] {
       value: triedCount >= 2 ? "Surface fixes, not the cause" : "Untreated at the source",
     },
     {
-      label: "Biggest flashpoint",
-      value: (() => {
-        const primary = primarySymptomOf(a);
-        return primary ? symptomById(primary).noun.replace(/^./, (c) => c.toUpperCase()) : "The symptom cluster";
-      })(),
+      label: "What we're tackling",
+      value: a.symptoms.length > 1 ? `All ${a.symptoms.length}, at one root` : "It, at the root",
     },
   ];
 }
@@ -283,7 +262,7 @@ function benefitsFor(a: QuizAnswers): string[] {
 }
 
 export function buildRecommendation(a: QuizAnswers): Recommendation {
-  const symptoms = orderedSymptoms(a).map(symptomById);
+  const symptoms = a.symptoms.map(symptomById);
   const dog = a.dogName.trim() || "your dog";
   const score = gutScore(a);
   const signals = signalsFor(a);
