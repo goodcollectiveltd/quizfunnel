@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
-import { buildRecommendation, hasSkinSignal, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
+import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, withAttribution, metaBrowserIds, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { saveSubmission, getQuizId } from "@/lib/submissions";
@@ -23,15 +23,11 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const dog = answers.dogName.trim() || "your dog";
   const dogPossessive = answers.dogName.trim() ? `${answers.dogName.trim()}'s` : "your dog's";
 
-  // Swipeable product gallery for the buy box: the hero's product shots, then a real
-  // before/after proof slide when the case genuinely matches (skin → Bear, ears → Murphy).
+  // Swipeable product gallery — the live PDP's carousel (product story + real
+  // before/afters baked in), so the result card and the product page she lands
+  // on are one continuous experience.
   const productShots = rec.hero.gallery ?? [rec.hero.heroImage ?? rec.hero.image, rec.hero.image];
   const gallerySlides: GallerySlide[] = productShots.map((src) => ({ src, alt: rec.hero.name }));
-  if (hasSkinSignal(answers)) {
-    gallerySlides.push({ src: "/images/symptoms/itchy-skin-before-after.jpg", alt: "Bear's skin before and after Good for Pets", badge: "h", name: "Bear", caption: "Bear's skin, before & after Good for Pets" });
-  } else if (answers.symptoms.includes("gunky-ears")) {
-    gallerySlides.push({ src: "/images/symptoms/gunky-ears-before-after.jpg", alt: "Murphy's ear before and after Good for Pets", badge: "v", name: "Murphy", caption: "Murphy's ear, a 30-day transformation" });
-  }
   const personalNote = rec.dietNote ?? rec.ageNote;
 
   // Personalised timeline: first significant change ~8 weeks; 90-day results guarantee.

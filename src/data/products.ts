@@ -44,8 +44,20 @@ export const PRODUCTS: Record<ProductKey, Product> = {
     supports: "gut health, digestion and everyday comfort",
     pdpUrl: PDP_URLS.probioPlus,
     image: "/images/products/probioPlus.png",
-    heroImage: "/images/products/probio-sprinkle.jpg", // capsule sprinkling into food bowl, red bg
-    gallery: ["/images/products/probio-sprinkle.jpg", "/images/products/probioPlus.png"],
+    heroImage: "/images/products/pdp/pdp-01-bottle.webp",
+    // The live PDP carousel (goodforpets.co/products/5-strain-probiotic), same
+    // order, minus the review screenshots (the result page has its own reviews).
+    // Re-pull via the PDP's /products/5-strain-probiotic.js media list.
+    gallery: [
+      "/images/products/pdp/pdp-01-bottle.webp",
+      "/images/products/pdp/pdp-02-benefits.webp",
+      "/images/products/pdp/pdp-03-ears-ba.webp",
+      "/images/products/pdp/pdp-04-paws-ba.webp",
+      "/images/products/pdp/pdp-05-skin-ba.webp",
+      "/images/products/pdp/pdp-06-mechanism.webp",
+      "/images/products/pdp/pdp-07-social.webp",
+      "/images/products/pdp/pdp-08-ingredients.webp",
+    ],
     highlights: ["5 live strains + 6 enzymes", "Prebiotic inulin", "Cold-pressed, never baked", "UK-made · GMP"],
     contents: [
       "5 live probiotic strains + 6 digestive enzymes",
