@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
 import { StarRating } from "@/components/ui/StarRating";
 import { SYMPTOMS, symptomById } from "@/data/symptoms";
-import { HOOK_TESTIMONIAL, SCOOTING_PROOF, type SymptomTag } from "@/data/testimonials";
+import { HOOK_TESTIMONIAL, SCOOTING_PROOF, TESTIMONIALS, type SymptomTag } from "@/data/testimonials";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { getAttribution } from "@/lib/tracking";
 import {
@@ -49,6 +49,26 @@ const ENTRY_H1: Record<SymptomTag, string> = {
   tummy: "sloppy poos & unsettled tummy",
   scooting: "scooting & gland trouble",
   "tear-staining": "tear stains & weepy eyes",
+};
+
+// Full landing takeover for entries whose AD we know (keep-the-hook rule: the
+// lander opens with the ad's exact headline, then pays off its promise). The
+// scooting entry is matched to the "party trick" static from the ad factory
+// (headline verbatim; its sub promised "Here's why" — the sub + CTA deliver it).
+const ENTRY_HOOK: Partial<Record<SymptomTag, {
+  badge: string;
+  h1: React.ReactNode;
+  sub: string;
+  cta: string;
+  testimonialId?: string; // symptom-matched hook review (falls back to HOOK_TESTIMONIAL)
+}>> = {
+  scooting: {
+    badge: "Free 60-second scooting check",
+    h1: <>The carpet shuffle isn't a party <span className="text-brand-red">trick.</span></>,
+    sub: "It usually starts in the gut. Answer six quick questions and we'll show you why it's happening to your dog, and how owners stop it coming back.",
+    cta: "Show me why →",
+    testimonialId: "R6", // Elaine — "no more scooting or grass eating", real photo
+  },
 };
 
 /* ------------------------------- options ------------------------------- */
@@ -535,19 +555,24 @@ function FirstTimerCard({ dog, onNext }: { dog: string; onNext: () => void }) {
 /* ------------------------------- hook (landing) ------------------------------- */
 
 function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<QuizAnswers>) => void; onStart: () => void }) {
-  const t = HOOK_TESTIMONIAL; // short, punchy "tried everything" review
+  // Ad-matched landing takeover when we know the creative behind this entry;
+  // otherwise the generic hook (with the symptom phrase swapped in if targeted).
+  const entryHook = ENTRY_SYMPTOM ? ENTRY_HOOK[ENTRY_SYMPTOM] : undefined;
+  const t = (entryHook?.testimonialId && TESTIMONIALS.find((r) => r.id === entryHook.testimonialId)) || HOOK_TESTIMONIAL;
   const initials = t.author.split(" ").map((w) => w[0]).slice(0, 2).join("");
   return (
     <div className="min-h-dvh">
       <header className="container-page flex justify-center py-5"><Logo /></header>
       <main className="container-page flex flex-col pb-16 pt-2">
         <div className="text-center">
-          <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">Free 60-second vet-guided assessment</span>
+          <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">{entryHook?.badge ?? "Free 60-second vet-guided assessment"}</span>
           <h1 className="mt-4 text-[30px] font-extrabold leading-[1.1] text-brand-ink sm:text-4xl">
-            Find the <span className="text-brand-red">root cause</span> of your dog's {ENTRY_SYMPTOM ? ENTRY_H1[ENTRY_SYMPTOM] : "itching, licking & gunky ears"}.
+            {entryHook ? entryHook.h1 : (
+              <>Find the <span className="text-brand-red">root cause</span> of your dog's {ENTRY_SYMPTOM ? ENTRY_H1[ENTRY_SYMPTOM] : "itching, licking & gunky ears"}.</>
+            )}
           </h1>
           <p className="mx-auto mt-3 max-w-md text-brand-ink/70">
-            This quick assessment reads your dog's symptoms, gut signals and history to work out what's really driving it, then shows you the exact plan. It usually starts in the gut.
+            {entryHook?.sub ?? "This quick assessment reads your dog's symptoms, gut signals and history to work out what's really driving it, then shows you the exact plan. It usually starts in the gut."}
           </p>
         </div>
 
@@ -574,7 +599,7 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
           <input autoFocus value={a.dogName} onChange={(e) => update({ dogName: e.target.value })}
             onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder="e.g. Bella" maxLength={24}
             className="mt-3 w-full rounded-2xl border-2 border-brand-ink/15 bg-white px-4 py-4 text-lg font-semibold text-brand-ink outline-none placeholder:text-brand-ink/30 focus:border-brand-red" />
-          <Button onClick={onStart} className="mt-4 w-full">Start the assessment →</Button>
+          <Button onClick={onStart} className="mt-4 w-full">{entryHook?.cta ?? "Start the assessment →"}</Button>
           <p className="mt-3 text-center text-xs text-brand-ink/50">Guided by our vet, Dr Kishan Vara · No email needed to see your result</p>
         </div>
 
