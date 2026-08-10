@@ -186,12 +186,15 @@ const SYMPTOM_DEPTH: Record<SymptomTag, { title: (dog: string) => string; option
     ],
   },
   scooting: {
+    // Pure frequency — one axis, mutually exclusive options. "At the vet for
+    // glands" was a different axis (a thing they've TRIED) and could be true
+    // alongside any of these; it lives in the tried list now.
     title: (d) => `How often is ${d} scooting?`,
     options: [
       { id: "daily", label: "Most days, across the carpet" },
       { id: "weekly", label: "Most weeks" },
-      { id: "after-poos", label: "Mostly after poos" },
-      { id: "vet-glands", label: "We're at the vet for their glands regularly" },
+      { id: "after-poos", label: "Mostly just after poos" },
+      { id: "occasional", label: "Every now and then" },
     ],
   },
   "tear-staining": {
@@ -207,6 +210,7 @@ const SYMPTOM_DEPTH: Record<SymptomTag, { title: (dog: string) => string; option
 const TRIED: { id: string; label: string }[] = [
   { id: "antibiotics", label: "Vet-prescribed antibiotics" },
   { id: "steroids", label: "Steroids / Apoquel" },
+  { id: "glands", label: "Regular gland emptying at the vet" },
   { id: "topical", label: "Creams, sprays or shampoos" },
   { id: "chews", label: "Allergy chews / baked chews" },
   { id: "diet", label: "Special / hypoallergenic diet" },
@@ -227,6 +231,10 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   steroids: {
     title: "Steroids & Apoquel just mask it",
     body: "They quieten the immune response, so the itch calms, but the moment they stop, it's usually back, because the driver in the gut was never addressed. A band-aid on a leaky pipe.",
+  },
+  glands: {
+    title: "Gland emptying only resets the clock",
+    body: "Expressing the glands gives relief for a few weeks, but it doesn't change why they keep filling. Firm, healthy stools empty the glands naturally with every poo. That's why the fix starts in the gut, not on the vet's table.",
   },
   topical: {
     title: "Creams treat the surface only",
