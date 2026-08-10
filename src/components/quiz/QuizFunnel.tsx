@@ -39,7 +39,11 @@ function readEntrySymptom(): SymptomTag | null {
     return null;
   }
 }
-const ENTRY_SYMPTOM = readEntrySymptom();
+// DEFAULT ENTRY = SCOOTING (Will, 13 Jul 2026): the only traffic for now is the
+// "party trick" scooting ads, so bare quiz.goodforpets.co gets the full scooting
+// experience even if the ad link drops the param. ?symptom=<id> still overrides
+// for future ad angles; remove the fallback when traffic diversifies.
+const ENTRY_SYMPTOM = readEntrySymptom() ?? "scooting";
 
 // The symptom phrase dropped into the landing H1 ("Find the root cause of your dog's …").
 const ENTRY_H1: Record<SymptomTag, string> = {
