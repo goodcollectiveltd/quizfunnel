@@ -65,13 +65,15 @@ const ENTRY_HOOK: Partial<Record<SymptomTag, {
   sub: string;
   cta: string;
   testimonialId?: string; // symptom-matched hook review (falls back to HOOK_TESTIMONIAL)
+  quote?: string; // short excerpt of that review for the lander (verbatim fragments only)
 }>> = {
   scooting: {
     badge: "Free 60-second scooting check",
     h1: <>The carpet shuffle isn't a party <span className="text-brand-red">trick.</span></>,
     sub: "It usually starts in the gut. Answer six quick questions and we'll show you why it's happening to your dog, and how owners stop it coming back.",
     cta: "Show me why →",
-    testimonialId: "R6", // Elaine — "no more scooting or grass eating", real photo
+    testimonialId: "R6", // Elaine — real photo; full review shown on the result page
+    quote: "No more scooting or grass eating. She's full of energy again.",
   },
 };
 
@@ -597,7 +599,7 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
           )}
           <div>
             <StarRating className="mb-1" />
-            <blockquote className="text-[15px] italic leading-snug text-brand-ink/90">"{t.quote}"</blockquote>
+            <blockquote className="text-[15px] italic leading-snug text-brand-ink/90">"{entryHook?.quote ?? t.quote}"</blockquote>
             <figcaption className="mt-1 text-xs font-semibold text-brand-ink/60">
               {t.author} · Verified review ✓
             </figcaption>
