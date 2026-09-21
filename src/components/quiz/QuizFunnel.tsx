@@ -75,6 +75,35 @@ const ENTRY_HOOK: Partial<Record<SymptomTag, {
     testimonialId: "R6", // Elaine — real photo; full review shown on the result page
     quote: "No more scooting or grass eating. She's full of energy again.",
   },
+  // Matched to the QF1/S1 paw-licking statics ("Still licking his paws raw?").
+  "paw-licking": {
+    badge: "Free 60-second paw-licking check",
+    h1: <>Still licking his paws <span className="text-brand-red">raw?</span></>,
+    sub: "It's usually his gut, not his skin. Answer six quick questions and we'll show you why the licking keeps coming back, and how owners stop it.",
+    cta: "Show me why →",
+    testimonialId: "R1", // Julie — real photo; paw-licking payoff in her words
+    quote: "No more paw licking or chewing. A much more relaxed and happy dog.",
+  },
+  // Matched to the itchy-skin statics ("The itch no cream could fix." / QF2's
+  // creams-sprays-vets chord); the CTA is QF2's own.
+  "itchy-skin": {
+    badge: "Free 60-second itch check",
+    h1: <>The itch no cream could <span className="text-brand-red">fix.</span></>,
+    sub: "Creams and sprays treat the surface. Answer six quick questions and we'll show you what's actually driving the itch, and how owners finally calm it.",
+    cta: "Find the root cause →",
+    testimonialId: "R4", // Chris — real photo; the tried-everything itch story
+    quote: "Nothing worked, not even the Apoquel the vet gave me. It took a week to start working.",
+  },
+  // Matched to the gunky-ears statics ("Gunky, smelly ears again?"); the sub
+  // carries QF3's drops-vs-gut mechanism line.
+  "gunky-ears": {
+    badge: "Free 60-second ear check",
+    h1: <>Gunky, smelly <span className="text-brand-red">ears</span> again?</>,
+    sub: "Drops clean them, the gut keeps them clean. Answer six quick questions and we'll show you why they keep coming back, and how owners break the cycle.",
+    cta: "Show me why →",
+    testimonialId: "R3", // Nicola — real photo; ears-first payoff in her words
+    quote: "They have made a big difference already to ears, skin and paws.",
+  },
 };
 
 /* ------------------------------- options ------------------------------- */
