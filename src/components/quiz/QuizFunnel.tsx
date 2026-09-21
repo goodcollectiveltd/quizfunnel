@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/Button";
 import { TrustBar } from "@/components/ui/TrustBar";
 import { StarRating } from "@/components/ui/StarRating";
 import { SYMPTOMS, symptomById } from "@/data/symptoms";
-import { HOOK_TESTIMONIAL, SCOOTING_PROOF, TESTIMONIALS, type SymptomTag } from "@/data/testimonials";
+import { HOOK_TESTIMONIAL, SCOOTING_PROOF, TESTIMONIALS, type SymptomTag, type Testimonial } from "@/data/testimonials";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { getAttribution } from "@/lib/tracking";
 import {
@@ -149,16 +149,22 @@ const GOAL_ECHO: Record<Goal, string> = {
   tears: "Brighter eyes, less staining. It's one of the first things owners notice.",
   happy: "Your dog, back to their bright, happy self.",
 };
-// Confirmation-card image per goal. Skin & ears are REAL customer before/afters
-// (Bear, Murphy); the rest are honest aspirational shots (no fake before/after
-// labels). Scooting has no photo asset at all, so its proof is a real REVIEW
-// (SCOOTING_PROOF) — rendered as a testimonial card instead of an image.
+// Confirmation-card proof per goal. Skin & ears show REAL customer
+// before/afters (Bear, Murphy) — the strongest proof we own. Every other goal
+// shows a REAL review with the reviewer's own dog photo featured (no stock
+// stand-ins, no fake before/after labels). Quotes are short excerpts built from
+// verbatim fragments of the full reviews in testimonials.ts; each goal uses a
+// different review to the entry-hook one it's most likely to follow, so a flow
+// never shows the same review twice.
 const GOAL_CARD: Partial<Record<Goal, { img: string; beforeAfter: boolean; vertical?: boolean; name?: string; caption: string }>> = {
   skin: { img: "/images/symptoms/itchy-skin-before-after.jpg", beforeAfter: true, name: "Bear", caption: "Bear's skin, before and after Good for Pets." },
   ears: { img: "/images/symptoms/gunky-ears-before-after.jpg", beforeAfter: true, vertical: true, name: "Murphy", caption: "Murphy's ear, a 30-day transformation on Good for Pets." },
-  paws: { img: "/images/goals/goal-paws.jpg", beforeAfter: false, caption: "Calm, comfortable, and no longer chewing at those paws." },
-  tummy: { img: "/images/goals/goal-tummy.jpg", beforeAfter: false, caption: "Settled, relaxed and easy in their own tummy again." },
-  happy: { img: "/images/goals/goal-happy.jpg", beforeAfter: false, caption: "Back to their bright, happy self." },
+};
+const GOAL_PROOF_REVIEW: Partial<Record<Goal, { id: string; quote: string }>> = {
+  paws: { id: "R4", quote: "Licked her paws bald and raw. She hasn't picked at them for 3 weeks now." },
+  tummy: { id: "R3", quote: "They have made a big difference already. Her poo is now normal." },
+  tears: { id: "R6", quote: "Her eyes are clearer with less tear staining. She's full of energy again." },
+  happy: { id: "R5", quote: "He went from all of that to being a healthy, happy, energetic puppy!" },
 };
 // Plain-English stool check (was a 6-option numbered Bristol scale — too long and
 // clinical; same underlying values, so scoring is unchanged).
@@ -520,12 +526,37 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
 
 /* ------------------------------- cards ------------------------------- */
 
+/** A real review as the proof beat: the reviewer's own dog photo featured
+ * large, their words beneath. Falls back to an initials card when no photo
+ * exists (Danny/scooting) — never a stand-in dog. */
+function ReviewProof({ t, quote }: { t: Testimonial; quote?: string }) {
+  if (!t.image) {
+    return (
+      <div className="mx-auto mt-6 max-w-[340px] text-left">
+        <TestimonialCard t={quote ? { ...t, quote } : t} />
+      </div>
+    );
+  }
+  return (
+    <figure className="mx-auto mt-6 max-w-[320px]">
+      <img src={t.image} alt={`${t.author}'s dog`} className="block w-full rounded-2xl shadow-card" />
+      <figcaption className="relative mx-3 -mt-5 rounded-2xl bg-white p-4 text-left shadow-card">
+        <StarRating className="mb-1" />
+        <blockquote className="text-[15px] italic leading-snug text-brand-ink/90">"{quote ?? t.quote}"</blockquote>
+        <p className="mt-1.5 text-xs font-semibold text-brand-ink/60">{t.author} · Verified review ✓</p>
+      </figcaption>
+    </figure>
+  );
+}
+
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
   // Validate the desire she just stated: echo it back, then prove it's reachable.
-  // Scooting has no photo proof, so it gets a real scooting REVIEW instead of an
-  // image. Otherwise the image matches the goal, falling back to the
-  // symptom-derived real before/after.
+  // Skin & ears get the real Bear/Murphy before/afters; every other goal gets a
+  // real review with the reviewer's own dog photo (GOAL_PROOF_REVIEW). Scooting's
+  // review has no photo, so it renders as an initials card.
   const scootingProof = a.goal === "scooting" || (!a.goal && a.symptoms.length === 1 && a.symptoms[0] === "scooting");
+  const proofRef = a.goal ? GOAL_PROOF_REVIEW[a.goal] : undefined;
+  const proofReview = proofRef ? TESTIMONIALS.find((r) => r.id === proofRef.id) : undefined;
   const card = (a.goal && GOAL_CARD[a.goal]) || GOAL_CARD[beforeAfterKind(a)]!;
   return (
     <div className="animate-fade-up pt-6 text-center">
@@ -533,9 +564,9 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
       {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
       {scootingProof ? (
-        <div className="mx-auto mt-6 max-w-[340px] text-left">
-          <TestimonialCard t={SCOOTING_PROOF} />
-        </div>
+        <ReviewProof t={SCOOTING_PROOF} />
+      ) : proofReview ? (
+        <ReviewProof t={proofReview} quote={proofRef!.quote} />
       ) : (
       <figure className="mx-auto mt-6 max-w-[320px]">
         <div className="relative overflow-hidden rounded-2xl shadow-card">
