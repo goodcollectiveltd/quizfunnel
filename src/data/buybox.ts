@@ -40,32 +40,54 @@ const tier = (variant: string, qty: number, title: string) => `
 
 export type BuyBoxSize = "small" | "medium" | "large";
 
-/** The buy box markup, personalised: the quiz's dog size pre-selected, and a
- * bigger default supply plus a per-dog supply note for multi-dog homes. */
-export function buyBoxHtml(opts: { size: BuyBoxSize; multiDog: boolean }): string {
+const esc = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+export interface CrewInfo {
+  capsPerDay: number; // the whole crew's combined daily capsules
+  line: string; // e.g. "Bella (medium) & Max (small) get through 3 capsules a day."
+}
+
+/** The buy box markup, personalised: the quiz's dog size pre-selected. Multi-dog
+ * homes pass `crew` — the size selector is dropped (each dog already picked
+ * theirs) and every capsPerDay is set to the crew's combined dose, so supply
+ * days, per-day price and the delivery cadence are all true for the whole crew. */
+export function buyBoxHtml(opts: { size: BuyBoxSize; multiDog: boolean; crew?: CrewInfo }): string {
   const sel = (k: BuyBoxSize) => opts.size === k;
+  const crew = opts.multiDog ? opts.crew : undefined;
+  let data = DATA;
+  let defaultQty = 2;
+  if (crew && crew.capsPerDay > 0) {
+    const d = JSON.parse(DATA);
+    const c = crew.capsPerDay;
+    d.capsPerDay = { toy: c, small: c, medium: c, large: c };
+    data = JSON.stringify(d);
+    // Default to the smallest bundle that lasts the crew ~60+ days (capped at 3).
+    defaultQty = Math.min(3, Math.max(1, Math.ceil((60 * c) / 90)));
+  }
   return `
-<div class="gfp-bb" data-gfp-buybox data-default-size="${opts.size}" data-default-qty="${opts.multiDog ? 3 : 2}" data-default-subscribe="true">
-  <script type="application/json" data-gfp-bb-data>${DATA}</script>
-  <fieldset class="gfp-bb__sizes">
+<div class="gfp-bb" data-gfp-buybox data-default-size="${opts.size}" data-default-qty="${defaultQty}" data-default-subscribe="true">
+  <script type="application/json" data-gfp-bb-data>${data}</script>
+  ${crew ? "" : `<fieldset class="gfp-bb__sizes">
     <legend class="gfp-bb__label">How big is your dog?</legend>
     <div class="gfp-bb__size-row">
       ${size("small", "Small", "Up to 25kg", sel("small"))}
       ${size("medium", "Medium", "25–40kg", sel("medium"))}
       ${size("large", "Large", "Over 40kg", sel("large"))}
     </div>
-  </fieldset>
+  </fieldset>`}
   <form action="/cart/add" method="post" accept-charset="UTF-8" class="gfp-bb__form" data-gfp-bb-form>
     <input type="hidden" name="form_type" value="product">
     <input type="hidden" name="quantity" value="1">
     <input type="hidden" name="id" value="" data-gfp-bb-variant-input>
     <input type="hidden" name="selling_plan" value="" data-gfp-bb-plan-input disabled>
+    ${crew ? `<p class="gfp-bb__label">Sized for your crew</p>
+    <p class="gfp-bb__size-help">${esc(crew.line)} Supply lengths below cover all of them together.</p>` : ""}
     <div class="gfp-bb__toggle" role="tablist">
       <button type="button" class="gfp-bb__toggle-btn" data-gfp-bb-mode="subscribe" role="tab">Subscribe &amp; Save</button>
       <button type="button" class="gfp-bb__toggle-btn" data-gfp-bb-mode="onetime" role="tab">One-time</button>
     </div>
     <p class="gfp-bb__label gfp-bb__supply-label">Choose your supply</p>
-    ${opts.multiDog ? `<p class="gfp-bb__size-help">Supply lengths shown are for one dog, so with more than one at home the 3 Tub bundle is the popular pick.</p>` : ""}
     <div class="gfp-bb__tiers" data-gfp-bb-tiers>
       ${tier("57197308674392", 1, "1 Tub")}
       ${tier("57197308707160", 2, "2 Tubs")}

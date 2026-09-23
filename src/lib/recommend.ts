@@ -18,9 +18,10 @@ export type Spend = "lt50" | "50to200" | "200to500" | "gt500";
 export type Goal = "paws" | "skin" | "ears" | "tummy" | "scooting" | "tears" | "happy"; // the outcome they want most
 
 export interface QuizAnswers {
-  dogName: string;
-  multiDog: boolean; // more than one dog at home — plural copy, size = the biggest, bigger default supply
-  size: DogSize | null;
+  dogName: string; // single dog's name — or, when multiDog, the joined display string ("Bella & Max")
+  multiDog: boolean; // more than one dog at home — plural copy, per-dog names + sizes below
+  dogs: { name: string; size: DogSize | null }[]; // multiDog only: one entry per dog
+  size: DogSize | null; // the (biggest) dog's size — drives scoring + dose fallbacks
   age: AgeBand | null;
   symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan, none ranked above another
   symptomSeverity: string | null; // the one emotional depth/impact answer (their words)
@@ -45,6 +46,7 @@ export interface QuizAnswers {
 export const emptyAnswers: QuizAnswers = {
   dogName: "",
   multiDog: false,
+  dogs: [],
   size: null,
   age: null,
   symptoms: [],
@@ -169,13 +171,16 @@ function gutScore(a: QuizAnswers): number {
   const tried = a.tried.filter((t) => t !== "nothing").length;
   s -= Math.min(tried * 2, 8);
   if (a.triedOutcome === "none") s -= 3; // tried lots, nothing worked = more entrenched
-  return Math.max(20, Math.min(78, s));
+  // Cap at 72 so the gauge never sits near "Thriving" — she came here with a problem.
+  return Math.max(20, Math.min(72, s));
 }
 
+// Harsher verdict bands (Will, 23 Sep 2026): no "mildly" — the gentlest read
+// is still plainly out of balance.
 function ratingFor(score: number): string {
-  if (score < 40) return "Significantly out of balance";
-  if (score < 58) return "Out of balance";
-  return "Mildly out of balance";
+  if (score < 45) return "Significantly out of balance";
+  if (score < 60) return "Clearly out of balance";
+  return "Out of balance";
 }
 
 /** The concerning signs we picked up — shown as evidence on the result. In HER

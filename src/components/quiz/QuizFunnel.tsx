@@ -409,12 +409,13 @@ export function QuizFunnel() {
           );
         })()}
         {key === "goal" && <GoalsStep a={a} dog={dog} update={update} onNext={next} />}
-        {key === "size" && (
-          <SingleStep title={a.multiDog ? "How big are your dogs?" : `How big is ${dog}?`}
-            sub={a.multiDog ? "Pick the biggest. Dosing goes by size, so we'll cover everyone from there." : "So we get the daily dose right."}
+        {key === "size" && (a.multiDog ? (
+          <MultiSizeStep a={a} update={update} onNext={next} />
+        ) : (
+          <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
             value={a.size} onPick={(v) => { update({ size: v as DogSize }); next(); }} />
-        )}
+        ))}
         {key === "stool" && (
           <SingleStep title={a.multiDog ? "And their poos, how are they most days?" : `And ${dog}'s poos, how are they most days?`} eyebrow="The classic gut check"
             rationale="The clearest everyday window into gut balance."
@@ -545,6 +546,41 @@ function GoalsStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
   );
 }
 
+/** Multi-dog homes: each dog picks their own size — dosing (and the crew's
+ * supply maths on the result) goes by every dog, not just the biggest. The
+ * biggest still lands in `answers.size` for the scoring + fallbacks. */
+const SIZE_ORDER: DogSize[] = ["toy", "small", "medium", "large"];
+
+function MultiSizeStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
+  const setSize = (i: number, s: DogSize) => {
+    const dogs = a.dogs.map((d, j) => (j === i ? { ...d, size: s } : d));
+    const sized = dogs.map((d) => d.size).filter((x): x is DogSize => !!x);
+    const biggest = sized.length ? SIZE_ORDER[Math.max(...sized.map((x) => SIZE_ORDER.indexOf(x)))] : null;
+    update({ dogs, size: biggest });
+  };
+  const all = a.dogs.length > 0 && a.dogs.every((d) => d.size);
+  return (
+    <StepShell title="How big is each dog?" sub="Dosing goes by size, so we'll get everyone's exactly right.">
+      <div className="space-y-5">
+        {a.dogs.map((d, i) => (
+          <div key={i}>
+            <p className="font-bold text-brand-ink">{d.name.trim() || `Dog ${i + 1}`}</p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {SIZE_ORDER.map((s) => (
+                <button key={s} type="button" onClick={() => setSize(i, s)}
+                  className={`rounded-xl border-2 bg-white px-3 py-2.5 text-left text-sm font-semibold transition-all ${d.size === s ? "border-brand-red text-brand-ink" : "border-brand-ink/10 text-brand-ink/70 hover:border-brand-red/30"}`}>
+                  {SIZE_LABEL[s]}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+      <StickyNext disabled={!all} onNext={onNext} label={all ? "Continue" : "Pick a size for each dog"} />
+    </StepShell>
+  );
+}
+
 function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
   const toggle = (id: string) => {
     if (id === "nothing") { update({ tried: a.tried.includes("nothing") ? [] : ["nothing"] }); return; }
@@ -669,10 +705,28 @@ function FirstTimerCard({ dog, multi, onNext }: { dog: string; multi: boolean; o
 
 /* ------------------------------- hook (landing) ------------------------------- */
 
+/** "Bella", "Bella & Max", "Bella, Max & Rex" — blanks skipped. */
+function joinDogNames(names: string[]): string {
+  const f = names.map((n) => n.trim()).filter(Boolean);
+  if (f.length === 0) return "";
+  if (f.length === 1) return f[0];
+  return `${f.slice(0, -1).join(", ")} & ${f[f.length - 1]}`;
+}
+
 function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<QuizAnswers>) => void; onStart: () => void }) {
   // Ad-matched landing takeover when we know the creative behind this entry;
   // otherwise the generic hook (with the symptom phrase swapped in if targeted).
   const entryHook = ENTRY_SYMPTOM ? ENTRY_HOOK[ENTRY_SYMPTOM] : undefined;
+  // Multi-dog: `dogs` is the source of truth; `dogName` mirrors the joined
+  // display string so every "{dog}" line downstream keeps working.
+  const syncDogs = (dogs: QuizAnswers["dogs"]) => update({ dogs, dogName: joinDogNames(dogs.map((d) => d.name)) });
+  const setDogName = (i: number, name: string) => syncDogs(a.dogs.map((d, j) => (j === i ? { ...d, name } : d)));
+  const addDog = () => syncDogs([...a.dogs, { name: "", size: null }]);
+  const removeDog = (i: number) => syncDogs(a.dogs.filter((_, j) => j !== i));
+  const toggleMulti = () => {
+    if (a.multiDog) update({ multiDog: false, dogs: [], dogName: a.dogs[0]?.name.trim() ?? "" });
+    else update({ multiDog: true, dogs: [{ name: a.dogName.trim(), size: null }, { name: "", size: null }] });
+  };
   const t = (entryHook?.testimonialId && TESTIMONIALS.find((r) => r.id === entryHook.testimonialId)) || HOOK_TESTIMONIAL;
   const initials = t.author.split(" ").map((w) => w[0]).slice(0, 2).join("");
   return (
@@ -707,22 +761,44 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
           </div>
         </figure>
 
-        {/* First question — on the landing page */}
+        {/* First question — on the landing page. Multi-dog homes get one name
+            box per dog (each dog then picks their own size later). */}
         <div className="mt-8">
           <label className="block text-lg font-extrabold text-brand-ink">
             {a.multiDog ? "First up, what are your dogs' names?" : "First up, what's your dog's name?"}
           </label>
           <p className="mt-1 text-sm text-brand-ink/60">We'll build the whole assessment around them.</p>
-          <input autoFocus value={a.dogName} onChange={(e) => update({ dogName: e.target.value })}
-            onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder={a.multiDog ? "e.g. Bella & Max" : "e.g. Bella"} maxLength={a.multiDog ? 48 : 24}
-            className="mt-3 w-full rounded-2xl border-2 border-brand-ink/15 bg-white px-4 py-4 text-lg font-semibold text-brand-ink outline-none placeholder:text-brand-ink/30 focus:border-brand-red" />
-          {/* Multi-dog homes get plural copy, size = the biggest dog, a bigger default supply */}
-          <button type="button" onClick={() => update({ multiDog: !a.multiDog })}
+          {a.multiDog ? (
+            <div className="mt-3 space-y-2.5">
+              {a.dogs.map((d, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input autoFocus={i === 0} value={d.name} onChange={(e) => setDogName(i, e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder={`Dog ${i + 1}'s name`} maxLength={24}
+                    className="w-full flex-1 rounded-2xl border-2 border-brand-ink/15 bg-white px-4 py-3.5 text-lg font-semibold text-brand-ink outline-none placeholder:text-brand-ink/30 focus:border-brand-red" />
+                  {a.dogs.length > 2 && (
+                    <button type="button" onClick={() => removeDog(i)} aria-label={`Remove dog ${i + 1}`}
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full text-brand-ink/40 hover:bg-brand-ink/5 hover:text-brand-ink">✕</button>
+                  )}
+                </div>
+              ))}
+              {a.dogs.length < 4 && (
+                <button type="button" onClick={addDog}
+                  className="w-full rounded-2xl border-2 border-dashed border-brand-ink/20 bg-white/60 py-3 text-sm font-bold text-brand-ink/60 transition-all hover:border-brand-red/40 hover:text-brand-ink">
+                  + Add another dog
+                </button>
+              )}
+            </div>
+          ) : (
+            <input autoFocus value={a.dogName} onChange={(e) => update({ dogName: e.target.value })}
+              onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder="e.g. Bella" maxLength={24}
+              className="mt-3 w-full rounded-2xl border-2 border-brand-ink/15 bg-white px-4 py-4 text-lg font-semibold text-brand-ink outline-none placeholder:text-brand-ink/30 focus:border-brand-red" />
+          )}
+          <button type="button" onClick={toggleMulti}
             className={`mt-3 flex w-full items-center gap-2.5 rounded-2xl border-2 bg-white p-3 text-left transition-all ${a.multiDog ? "border-brand-red" : "border-brand-ink/10 hover:border-brand-red/30"}`}>
             <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-xs ${a.multiDog ? "border-brand-red bg-brand-red text-white" : "border-brand-ink/25"}`}>{a.multiDog && "✓"}</span>
             <span className="flex-1 text-sm font-semibold text-brand-ink">I've got more than one dog</span>
           </button>
-          {a.multiDog && <p className="mt-2 text-xs text-brand-ink/55">Lovely. One plan can cover them all, we'll size it as we go.</p>}
+          {a.multiDog && <p className="mt-2 text-xs text-brand-ink/55">Lovely. One plan covers them all, each dog gets their own dose.</p>}
           <Button onClick={onStart} className="mt-4 w-full">{entryHook?.cta ?? "Start the assessment →"}</Button>
           <p className="mt-3 text-center text-xs text-brand-ink/50">Guided by our vet, Dr Kishan Vara · No email needed to see your result</p>
         </div>

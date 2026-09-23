@@ -8,20 +8,22 @@ import { track, metaBrowserIds, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { saveSubmission, getQuizId } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
-import { submitCartAdd } from "@/lib/commerce";
-import { buyBoxHtml, type BuyBoxSize } from "@/data/buybox";
+import { submitCartAdd, CAPS_PER_DAY } from "@/lib/commerce";
+import { buyBoxHtml, type BuyBoxSize, type CrewInfo } from "@/data/buybox";
 
 const VET_IMG = "/images/people/kishan.jpg";
 
-// Brand tokens for the injected PDP buy box (its CSS reads the theme's
-// comma-separated colour-channel vars; the quiz is all-Poppins).
+// The live PDP's own tokens (near-black text, Inter body, Poppins 700
+// headings) so the injected buy box renders exactly like the product page,
+// not the louder quiz styling.
+const PDP_INK = "#131315";
 const bbHostStyle = {
-  "--color-scheme-text": "40,44,95",
-  "--color-scheme-accent-1": "239,56,36",
+  "--color-scheme-text": "19,19,21",
+  "--color-scheme-accent-1": "239,22,18",
   "--color-scheme-accent-1-contrast": "255,255,255",
-  "--main-font-stack": "'Poppins',system-ui,sans-serif",
+  "--main-font-stack": "'Inter',system-ui,sans-serif",
   "--heading-font-stack": "'Poppins',system-ui,sans-serif",
-  "--heading-font-weight": "800",
+  "--heading-font-weight": "700",
 } as CSSProperties;
 
 // Real-customer photos (product visible) for the social-proof wall on the result page.
@@ -58,11 +60,22 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   // hidden _quiz_id line-item property stitches the order back to this quiz.
   const bbSize: BuyBoxSize =
     answers.size === "large" ? "large" : answers.size === "medium" ? "medium" : "small";
+  // Multi-dog: the crew's combined daily dose drives the buy box supply maths
+  // (per-dog sizes came from the size step), so supply days and cadence are
+  // true for the whole household, not just one dog.
+  const crew: CrewInfo | undefined = multi && answers.dogs.length > 0
+    ? (() => {
+        const caps = answers.dogs.reduce((n, d) => n + CAPS_PER_DAY[d.size ?? "small"], 0);
+        const parts = answers.dogs.map((d, i) => `${d.name.trim() || `Dog ${i + 1}`} (${d.size ?? "small"})`);
+        const names = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} & ${parts[parts.length - 1]}`;
+        return { capsPerDay: caps, line: `${names} get through ${caps} capsules a day.` };
+      })()
+    : undefined;
   const bbRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const host = bbRef.current;
     if (!host) return;
-    host.innerHTML = buyBoxHtml({ size: bbSize, multiDog: multi });
+    host.innerHTML = buyBoxHtml({ size: bbSize, multiDog: multi, crew });
     if (!document.querySelector("link[data-gfp-bb-css]")) {
       const l = document.createElement("link");
       l.rel = "stylesheet";
@@ -121,6 +134,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     eats_grass: answers.grass,
     wind: answers.wind,
     multi_dog: answers.multiDog,
+    dogs: answers.multiDog ? answers.dogs.map((d) => ({ name: d.name.trim(), size: d.size })) : undefined,
     stool_consistency: answers.stool,
     issue_duration: answers.duration,
     tried_before: answers.tried,
@@ -331,38 +345,31 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="mt-4 overflow-hidden rounded-3xl">
             <ProductGallery slides={gallerySlides} />
           </div>
-          {/* Mirrors the live PDP block order exactly: social proof row → title →
-              benefit bullets → buy box. Only addition: the personalised dose card. */}
-          <div className="pt-6">
+          {/* Mirrors the live PDP exactly — same block order (social proof →
+              title → benefit bullets → buy box), same near-black type. */}
+          <div className="pt-6" style={{ fontFamily: "'Inter',system-ui,sans-serif", color: PDP_INK }}>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <span className="flex items-center gap-2">
                 <StarRating />
-                <span className="text-sm font-semibold text-brand-ink/60">20,000+ bought</span>
+                <span className="text-sm font-semibold" style={{ color: "#6B6B6B" }}>20,000+ bought</span>
               </span>
-              <span className="rounded-md bg-brand-red px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Best Seller</span>
+              <span className="rounded-md px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white" style={{ background: "#EF1612" }}>Best Seller</span>
             </div>
-            <h2 className="mt-2 text-left text-[27px] font-extrabold leading-tight text-brand-ink">{rec.hero.name}</h2>
-            <ul className="mt-4">
+            <h2 className="mt-2 text-left text-[26px] font-bold leading-tight" style={{ fontFamily: "'Poppins',system-ui,sans-serif" }}>{rec.hero.name}</h2>
+            <ul className="mt-3">
               {["Calms itchy skin & paw-licking", "Soothes gunky, irritated ears", "Firmer stools & stronger digestion"].map((b, i) => (
-                <li key={b} className={`flex items-center justify-between gap-3 py-3 text-[16px] font-medium text-brand-ink ${i ? "border-t border-brand-ink/10" : ""}`}>
+                <li key={b} className="flex items-center justify-between gap-3 py-3 text-[16px]" style={{ borderTop: i ? "1px solid rgba(0,0,0,0.08)" : undefined }}>
                   {b}
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6 shrink-0 text-brand-red" aria-hidden>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#EF1612" strokeWidth="2" className="h-6 w-6 shrink-0" aria-hidden>
                     <circle cx="12" cy="12" r="10" /><path d="M8 12.5l2.5 2.5L16 9.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </li>
               ))}
             </ul>
-            {/* The one personalised beat: the dose they need */}
-            <div className="mt-4 rounded-xl bg-brand-cream p-4">
-              {multi ? (
-                <p className="text-[15px] font-semibold text-brand-ink">Dose by size: 1 capsule a day up to 25kg · 2 for 25–40kg · 3 over 40kg. Twist open and sprinkle on food.</p>
-              ) : (
-                <p className="text-[15px] font-semibold text-brand-ink">{dogPossessive} dose: {rec.dose}. Twist open and sprinkle on food.</p>
-              )}
-            </div>
-            {/* The full PDP buy box — size cards, supply tiers, Subscribe & Save.
-                Filled by the theme's own gfp-buy-box.js; size pre-selected from the quiz. */}
-            <div ref={bbRef} className="gfp-bb-host mt-7" style={bbHostStyle} />
+            {/* The full PDP buy box — supply tiers, Subscribe & Save, tabs.
+                Filled by the theme's own gfp-buy-box.js; single dog gets the size
+                cards pre-selected, a crew gets true whole-crew supply maths. */}
+            <div ref={bbRef} className="gfp-bb-host mt-5" style={bbHostStyle} />
             <p className="mt-3 text-center text-xs text-brand-ink/50">🚚 Delivered in 2–3 working days · pause, skip or cancel anytime</p>
           </div>
         </div>
