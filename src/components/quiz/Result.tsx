@@ -67,7 +67,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     impact: answers.symptomSeverity, // the one emotional depth/impact answer
     ad_symptom: getAttribution().symptom ?? null, // which symptom-led ad brought them in
 
-    hoped_outcome: answers.goal,
+    hoped_outcome: answers.goals,
     diet: answers.diet,
     treats: answers.treats,
     breath: answers.breath,

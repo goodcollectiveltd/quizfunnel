@@ -23,7 +23,7 @@ export interface QuizAnswers {
   age: AgeBand | null;
   symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan, none ranked above another
   symptomSeverity: string | null; // the one emotional depth/impact answer (their words)
-  goal: Goal | null; // what they're hoping to get back for their dog (emotional lead-in)
+  goals: Goal[]; // the outcomes they're hoping for (emotional lead-in, multi-select, tap order)
   // Diet
   diet: string | null;
   treats: Treats | null;
@@ -47,7 +47,7 @@ export const emptyAnswers: QuizAnswers = {
   age: null,
   symptoms: [],
   symptomSeverity: null,
-  goal: null,
+  goals: [],
   diet: null,
   treats: null,
   breath: null,

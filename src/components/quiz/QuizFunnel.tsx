@@ -384,11 +384,7 @@ export function QuizFunnel() {
               onPick={(v) => { update({ symptomSeverity: v }); next(); }} />
           );
         })()}
-        {key === "goal" && (
-          <SingleStep title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
-            sub="Pick the one that matters most. (We build the plan around everything else too.)"
-            options={goalsFor(a)} value={a.goal} onPick={(v) => { update({ goal: v as Goal }); next(); }} />
-        )}
+        {key === "goal" && <GoalsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "size" && (
           <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
@@ -506,6 +502,23 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
   );
 }
 
+function GoalsStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
+  const toggle = (id: Goal) =>
+    update({ goals: a.goals.includes(id) ? a.goals.filter((g) => g !== id) : [...a.goals, id] });
+  return (
+    <StepShell title={`What would mean the most for ${dog}?`} eyebrow="Picture the win"
+      sub="Tick everything that would make a difference.">
+      <div className="space-y-3">
+        {goalsFor(a).map((o) => (
+          <OptionCard key={o.id} multi active={a.goals.includes(o.id)} emoji={o.emoji} label={o.label} onClick={() => toggle(o.id)} />
+        ))}
+      </div>
+      <StickyNext disabled={a.goals.length === 0} onNext={onNext}
+        label={a.goals.length ? `Continue (${a.goals.length} selected)` : "Pick at least one"} />
+    </StepShell>
+  );
+}
+
 function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; update: (p: Partial<QuizAnswers>) => void; onNext: () => void }) {
   const toggle = (id: string) => {
     if (id === "nothing") { update({ tried: a.tried.includes("nothing") ? [] : ["nothing"] }); return; }
@@ -550,20 +563,22 @@ function ReviewProof({ t, quote }: { t: Testimonial; quote?: string }) {
 }
 
 function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNext: () => void }) {
-  // Validate the desire she just stated: echo it back, then prove it's reachable.
-  // Skin & ears get the real Bear/Murphy before/afters; every other goal gets a
-  // real review with the reviewer's own dog photo (GOAL_PROOF_REVIEW). Scooting's
-  // review has no photo, so it renders as an initials card.
-  const scootingProof = a.goal === "scooting" || (!a.goal && a.symptoms.length === 1 && a.symptoms[0] === "scooting");
-  const proofRef = a.goal ? GOAL_PROOF_REVIEW[a.goal] : undefined;
+  // Validate the desires she just stated: echo the first one back (her first
+  // tap), then prove it's reachable. A real Bear/Murphy before/after wins if
+  // skin or ears is among her picks; otherwise her first goal's real review
+  // (reviewer's own dog photo; scooting's review has no photo → initials card).
+  const goals = a.goals;
+  const baGoal = goals.find((g) => GOAL_CARD[g]);
+  const reviewGoal = !baGoal ? goals.find((g) => g === "scooting" || GOAL_PROOF_REVIEW[g]) : undefined;
+  const proofRef = reviewGoal && reviewGoal !== "scooting" ? GOAL_PROOF_REVIEW[reviewGoal] : undefined;
   const proofReview = proofRef ? TESTIMONIALS.find((r) => r.id === proofRef.id) : undefined;
-  const card = (a.goal && GOAL_CARD[a.goal]) || GOAL_CARD[beforeAfterKind(a)]!;
+  const card = (baGoal && GOAL_CARD[baGoal]) || GOAL_CARD[beforeAfterKind(a)]!;
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">You're in the right place</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">10,000+ UK dogs have been here, and turned it around.</h1>
-      {a.goal && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[a.goal]}</p>}
-      {scootingProof ? (
+      {goals.length > 0 && <p className="mx-auto mt-3 max-w-sm font-semibold text-brand-red">{GOAL_ECHO[goals[0]]}</p>}
+      {reviewGoal === "scooting" ? (
         <ReviewProof t={SCOOTING_PROOF} />
       ) : proofReview ? (
         <ReviewProof t={proofReview} quote={proofRef!.quote} />
