@@ -244,16 +244,30 @@ const SYMPTOM_DEPTH: Record<SymptomTag, { title: (dog: string) => string; option
     ],
   },
 };
-const TRIED: { id: string; label: string }[] = [
-  { id: "antibiotics", label: "Vet-prescribed antibiotics" },
+// The tried list is DYNAMIC (Will, 23 Sep 2026): options are filtered to the
+// symptoms in play — the hero/entry symptom plus everything she ticked. The
+// universal keys (steroids/Apoquel, allergy/probiotic chews, special diet, plus
+// another-probiotic and nothing-yet) always show; symptom-specific treatments
+// only show when their symptom is relevant, so a paw-licking flow never asks
+// about gland emptying.
+const TRIED: { id: string; label: string; for?: SymptomTag[] }[] = [
   { id: "steroids", label: "Steroids / Apoquel" },
-  { id: "glands", label: "Regular gland emptying at the vet" },
-  { id: "topical", label: "Creams, sprays or shampoos" },
-  { id: "chews", label: "Allergy chews / baked chews" },
+  { id: "antibiotics", label: "Vet-prescribed antibiotics", for: ["itchy-skin", "paw-licking", "gunky-ears", "scooting"] },
+  { id: "glands", label: "Regular gland emptying at the vet", for: ["scooting"] },
+  { id: "topical", label: "Creams, sprays or shampoos", for: ["itchy-skin", "paw-licking"] },
+  { id: "drops", label: "Ear drops or cleaners", for: ["gunky-ears"] },
+  { id: "wipes", label: "Tear-stain wipes or powders", for: ["tear-staining"] },
+  { id: "chews", label: "Allergy chews / probiotic chews" },
   { id: "diet", label: "Special / hypoallergenic diet" },
   { id: "probiotic", label: "Another probiotic or supplement" },
   { id: "nothing", label: "Nothing yet, this is our first go" },
 ];
+/** Tried options relevant to this flow: hero symptom + her ticked symptoms. */
+function triedFor(a: QuizAnswers): { id: string; label: string }[] {
+  const relevant = new Set<SymptomTag>(a.symptoms);
+  if (ENTRY_SYMPTOM) relevant.add(ENTRY_SYMPTOM);
+  return TRIED.filter((o) => !o.for || o.for.some((s) => relevant.has(s)));
+}
 const TRIED_OUTCOME: { id: TriedOutcome; label: string; emoji: string }[] = [
   { id: "none", label: "No, no real difference", emoji: "😞" },
   { id: "temporary", label: "A little, but it came straight back", emoji: "🔁" },
@@ -288,6 +302,14 @@ const TRIED_EXPLAINERS: Record<string, { title: string; body: string }> = {
   probiotic: {
     title: "Not all probiotics reach the gut",
     body: "Many are underdosed or heat-treated and pass straight through. Strength and format matter. Ours is 5 billion live CFU per capsule, cold-pressed and human-grade.",
+  },
+  drops: {
+    title: "Ear drops only clear what's there",
+    body: "Drops and cleaners shift the gunk that's already built up, but they don't change why the ear keeps producing it. That's why it's back within days. Drops clean the ear. The gut keeps it clean.",
+  },
+  wipes: {
+    title: "Wipes lift the stain, not the source",
+    body: "Wipes and powders work on the fur, after the staining has already happened. The stain starts with what's in the tears, and that traces back to the gut. Rebalance it and there's less to wipe away in the first place.",
   },
 };
 
@@ -334,7 +356,7 @@ export function QuizFunnel() {
 
   const seq = useMemo(() => buildSequence(a), [a]);
   const key = seq[idx];
-  const dog = a.dogName.trim() || "your dog";
+  const dog = a.dogName.trim() || (a.multiDog ? "your dogs" : "your dog");
 
   // Per-step event → PostHog funnel shows question-by-question drop-off. Each step
   // (questions AND the interstitial cards) fires once as it comes into view.
@@ -373,30 +395,33 @@ export function QuizFunnel() {
         {key === "impact" && (() => {
           // Ad-continuity wording when she came from a symptom ad AND kept that
           // symptom ticked; otherwise the universal all-symptoms impact beat.
-          const entryDepth = ENTRY_SYMPTOM && a.symptoms.includes(ENTRY_SYMPTOM) ? SYMPTOM_DEPTH[ENTRY_SYMPTOM] : null;
+          // Multi-dog homes always get the universal beat — the depth questions
+          // are written around one dog's name.
+          const entryDepth = !a.multiDog && ENTRY_SYMPTOM && a.symptoms.includes(ENTRY_SYMPTOM) ? SYMPTOM_DEPTH[ENTRY_SYMPTOM] : null;
           return entryDepth ? (
             <SingleStep title={entryDepth.title(dog)} eyebrow="We hear this a lot"
               options={entryDepth.options} value={a.symptomSeverity}
               onPick={(v) => { update({ symptomSeverity: v }); next(); }} />
           ) : (
-            <SingleStep title="How much is it affecting you both, day to day?" eyebrow="Be honest"
+            <SingleStep title={a.multiDog ? "How much is it affecting the household, day to day?" : "How much is it affecting you both, day to day?"} eyebrow="Be honest"
               options={IMPACT} value={a.symptomSeverity}
               onPick={(v) => { update({ symptomSeverity: v }); next(); }} />
           );
         })()}
         {key === "goal" && <GoalsStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "size" && (
-          <SingleStep title={`How big is ${dog}?`} sub="So we get the daily dose right."
+          <SingleStep title={a.multiDog ? "How big are your dogs?" : `How big is ${dog}?`}
+            sub={a.multiDog ? "Pick the biggest. Dosing goes by size, so we'll cover everyone from there." : "So we get the daily dose right."}
             options={(["toy","small","medium","large"] as DogSize[]).map((s) => ({ id: s, label: SIZE_LABEL[s] }))}
             value={a.size} onPick={(v) => { update({ size: v as DogSize }); next(); }} />
         )}
         {key === "stool" && (
-          <SingleStep title={`And ${dog}'s poos, how are they most days?`} eyebrow="The classic gut check"
+          <SingleStep title={a.multiDog ? "And their poos, how are they most days?" : `And ${dog}'s poos, how are they most days?`} eyebrow="The classic gut check"
             rationale="The clearest everyday window into gut balance."
             options={STOOL} value={a.stool} onPick={(v) => { update({ stool: v as Stool }); next(); }} />
         )}
         {key === "card-beforeafter" && <BeforeAfterCard a={a} dog={dog} onNext={next} />}
-        {key === "card-firsttimer" && <FirstTimerCard dog={dog} onNext={next} />}
+        {key === "card-firsttimer" && <FirstTimerCard dog={dog} multi={a.multiDog} onNext={next} />}
         {key === "tried" && <TriedStep a={a} dog={dog} update={update} onNext={next} />}
         {key === "tried-outcome" && (
           <SingleStep title={`Did any of it actually work for ${dog}?`} eyebrow="What you've tried"
@@ -490,7 +515,8 @@ function SymptomsStep({ a, update, onNext }: { a: QuizAnswers; update: (p: Parti
     ? [symptomById(ENTRY_SYMPTOM), ...SYMPTOMS.filter((s) => s.id !== ENTRY_SYMPTOM)]
     : SYMPTOMS;
   return (
-    <StepShell title="Which of these is your dog dealing with?" sub="Tick everything that sounds familiar. We build the plan around all of it.">
+    <StepShell title={a.multiDog ? "Which of these are your dogs dealing with?" : "Which of these is your dog dealing with?"}
+      sub={a.multiDog ? "Tick everything that sounds familiar, across all of them. One plan covers the lot." : "Tick everything that sounds familiar. We build the plan around all of it."}>
       <div className="space-y-3">
         {list.map((s) => (
           <OptionCard key={s.id} multi active={a.symptoms.includes(s.id)} emoji={s.emoji} label={s.label} sub={s.short} onClick={() => toggle(s.id)} />
@@ -528,7 +554,7 @@ function TriedStep({ a, dog, update, onNext }: { a: QuizAnswers; dog: string; up
   return (
     <StepShell title={`What have you already tried for ${dog}?`} sub="Tick all that apply. This tells us a lot.">
       <div className="space-y-3">
-        {TRIED.map((o) => (
+        {triedFor(a).map((o) => (
           <OptionCard key={o.id} multi active={a.tried.includes(o.id)} label={o.label} onClick={() => toggle(o.id)} />
         ))}
       </div>
@@ -599,7 +625,7 @@ function BeforeAfterCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; onNe
       )}
       <div className="mt-7 flex flex-col items-center gap-2">
         <StarRating />
-        <p className="text-sm text-brand-ink/60">Just a few quick ones left to finish {dog}'s assessment.</p>
+        <p className="text-sm text-brand-ink/60">Just a few quick ones left to finish {dog.endsWith("s") ? `${dog}'` : `${dog}'s`} assessment.</p>
         <Button onClick={onNext} className="mt-2 w-full max-w-xs">Continue →</Button>
       </div>
     </div>
@@ -628,13 +654,13 @@ function TriedExplainerCard({ a, dog, onNext }: { a: QuizAnswers; dog: string; o
   );
 }
 
-function FirstTimerCard({ dog, onNext }: { dog: string; onNext: () => void }) {
+function FirstTimerCard({ dog, multi, onNext }: { dog: string; multi: boolean; onNext: () => void }) {
   return (
     <div className="animate-fade-up pt-6 text-center">
       <span className="rounded-full bg-brand-sky/25 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-ink">Good news</span>
       <h1 className="mt-4 text-2xl font-extrabold leading-snug text-brand-ink">Starting fresh is actually the smart move.</h1>
       <p className="mx-auto mt-3 max-w-sm text-brand-ink/70">
-        Most owners spend months on symptom treatments before anyone mentions the gut. Beginning at the root cause means {dog} skips the trial-and-error. You're not undoing damage from things that never worked.
+        Most owners spend months on symptom treatments before anyone mentions the gut. Beginning at the root cause means {dog} {multi ? "skip" : "skips"} the trial-and-error. You're not undoing damage from things that never worked.
       </p>
       <div className="mt-8"><Button onClick={onNext} className="w-full max-w-xs">Show me {dog}'s plan →</Button></div>
     </div>
@@ -683,11 +709,20 @@ function Hook({ a, update, onStart }: { a: QuizAnswers; update: (p: Partial<Quiz
 
         {/* First question — on the landing page */}
         <div className="mt-8">
-          <label className="block text-lg font-extrabold text-brand-ink">First up, what's your dog's name?</label>
+          <label className="block text-lg font-extrabold text-brand-ink">
+            {a.multiDog ? "First up, what are your dogs' names?" : "First up, what's your dog's name?"}
+          </label>
           <p className="mt-1 text-sm text-brand-ink/60">We'll build the whole assessment around them.</p>
           <input autoFocus value={a.dogName} onChange={(e) => update({ dogName: e.target.value })}
-            onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder="e.g. Bella" maxLength={24}
+            onKeyDown={(e) => e.key === "Enter" && onStart()} placeholder={a.multiDog ? "e.g. Bella & Max" : "e.g. Bella"} maxLength={a.multiDog ? 48 : 24}
             className="mt-3 w-full rounded-2xl border-2 border-brand-ink/15 bg-white px-4 py-4 text-lg font-semibold text-brand-ink outline-none placeholder:text-brand-ink/30 focus:border-brand-red" />
+          {/* Multi-dog homes get plural copy, size = the biggest dog, a bigger default supply */}
+          <button type="button" onClick={() => update({ multiDog: !a.multiDog })}
+            className={`mt-3 flex w-full items-center gap-2.5 rounded-2xl border-2 bg-white p-3 text-left transition-all ${a.multiDog ? "border-brand-red" : "border-brand-ink/10 hover:border-brand-red/30"}`}>
+            <span className={`grid h-5 w-5 shrink-0 place-items-center rounded-md border-2 text-xs ${a.multiDog ? "border-brand-red bg-brand-red text-white" : "border-brand-ink/25"}`}>{a.multiDog && "✓"}</span>
+            <span className="flex-1 text-sm font-semibold text-brand-ink">I've got more than one dog</span>
+          </button>
+          {a.multiDog && <p className="mt-2 text-xs text-brand-ink/55">Lovely. One plan can cover them all, we'll size it as we go.</p>}
           <Button onClick={onStart} className="mt-4 w-full">{entryHook?.cta ?? "Start the assessment →"}</Button>
           <p className="mt-3 text-center text-xs text-brand-ink/50">Guided by our vet, Dr Kishan Vara · No email needed to see your result</p>
         </div>
