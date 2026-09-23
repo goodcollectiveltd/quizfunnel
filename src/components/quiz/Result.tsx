@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
+import { StarRating } from "@/components/ui/StarRating";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
 import { track, metaBrowserIds, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
@@ -42,7 +43,6 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   // on are one continuous experience.
   const productShots = rec.hero.gallery ?? [rec.hero.heroImage ?? rec.hero.image, rec.hero.image];
   const gallerySlides: GallerySlide[] = productShots.map((src) => ({ src, alt: rec.hero.name }));
-  const personalNote = rec.dietNote ?? rec.ageNote;
 
   // Personalised timeline: first significant change ~8 weeks; 90-day results guarantee.
   const now = new Date();
@@ -331,33 +331,35 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="mt-4 overflow-hidden rounded-3xl">
             <ProductGallery slides={gallerySlides} />
           </div>
+          {/* Mirrors the live PDP block order exactly: social proof row → title →
+              benefit bullets → buy box. Only addition: the personalised dose card. */}
           <div className="pt-6">
-            <h2 className="text-center text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
-            <p className="mt-1 text-center font-semibold text-brand-red">{rec.hero.tagline}</p>
-            {/* Personalised note — one tidy block instead of a stack of ticks */}
-            <div className="mx-auto mt-4 max-w-sm rounded-xl bg-brand-cream p-3 text-center">
-              {multi ? (
-                <p className="text-sm font-semibold text-brand-ink">Dosing for the crew: 1 capsule a day up to 25kg, 2 a day for 25–40kg, 3 a day over 40kg. Sprinkle on everyone's food.</p>
-              ) : (
-                <p className="text-sm font-semibold text-brand-ink">For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}</p>
-              )}
-              {personalNote && <p className="mt-1.5 text-xs leading-snug text-brand-ink/65">{personalNote}</p>}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <span className="flex items-center gap-2">
+                <StarRating />
+                <span className="text-sm font-semibold text-brand-ink/60">20,000+ bought</span>
+              </span>
+              <span className="rounded-md bg-brand-red px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Best Seller</span>
             </div>
-            {/* What's inside — scannable chips, not a wall of sentences */}
-            {rec.hero.highlights && rec.hero.highlights.length > 0 && (
-              <div className="mt-4 flex flex-wrap justify-center gap-1.5">
-                {rec.hero.highlights.map((h) => (
-                  <span key={h} className="inline-flex items-center gap-1 rounded-full bg-brand-red/10 px-2.5 py-1 text-xs font-semibold text-brand-ink/80">
-                    <span className="text-brand-red">✓</span>{h}
-                  </span>
-                ))}
-              </div>
-            )}
-            {rec.smallDog && (
-              <p className="mt-4 rounded-xl bg-brand-sky/20 p-3 text-sm text-brand-ink/80">
-                🐾 Because {dog} {multi ? "are" : "is"} on the smaller side: these are <strong>twist-open sprinkle capsules</strong>. No giant tablet to crush. Just open and mix into food.
-              </p>
-            )}
+            <h2 className="mt-2 text-left text-[27px] font-extrabold leading-tight text-brand-ink">{rec.hero.name}</h2>
+            <ul className="mt-4">
+              {["Calms itchy skin & paw-licking", "Soothes gunky, irritated ears", "Firmer stools & stronger digestion"].map((b, i) => (
+                <li key={b} className={`flex items-center justify-between gap-3 py-3 text-[16px] font-medium text-brand-ink ${i ? "border-t border-brand-ink/10" : ""}`}>
+                  {b}
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-6 w-6 shrink-0 text-brand-red" aria-hidden>
+                    <circle cx="12" cy="12" r="10" /><path d="M8 12.5l2.5 2.5L16 9.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </li>
+              ))}
+            </ul>
+            {/* The one personalised beat: the dose they need */}
+            <div className="mt-4 rounded-xl bg-brand-cream p-4">
+              {multi ? (
+                <p className="text-[15px] font-semibold text-brand-ink">Dose by size: 1 capsule a day up to 25kg · 2 for 25–40kg · 3 over 40kg. Twist open and sprinkle on food.</p>
+              ) : (
+                <p className="text-[15px] font-semibold text-brand-ink">{dogPossessive} dose: {rec.dose}. Twist open and sprinkle on food.</p>
+              )}
+            </div>
             {/* The full PDP buy box — size cards, supply tiers, Subscribe & Save.
                 Filled by the theme's own gfp-buy-box.js; size pre-selected from the quiz. */}
             <div ref={bbRef} className="gfp-bb-host mt-7" style={bbHostStyle} />
