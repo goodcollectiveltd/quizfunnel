@@ -1,14 +1,27 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
-import { track, withAttribution, metaBrowserIds, getAttribution } from "@/lib/tracking";
+import { track, metaBrowserIds, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
 import { saveSubmission, getQuizId } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
+import { submitCartAdd } from "@/lib/commerce";
+import { buyBoxHtml, type BuyBoxSize } from "@/data/buybox";
 
 const VET_IMG = "/images/people/kishan.jpg";
+
+// Brand tokens for the injected PDP buy box (its CSS reads the theme's
+// comma-separated colour-channel vars; the quiz is all-Poppins).
+const bbHostStyle = {
+  "--color-scheme-text": "40,44,95",
+  "--color-scheme-accent-1": "239,56,36",
+  "--color-scheme-accent-1-contrast": "255,255,255",
+  "--main-font-stack": "'Poppins',system-ui,sans-serif",
+  "--heading-font-stack": "'Poppins',system-ui,sans-serif",
+  "--heading-font-weight": "800",
+} as CSSProperties;
 
 // Real-customer photos (product visible) for the social-proof wall on the result page.
 const UGC_WALL = [
@@ -20,8 +33,9 @@ const UGC_WALL = [
 
 export function Result({ answers }: { answers: QuizAnswers }) {
   const rec = buildRecommendation(answers);
-  const dog = answers.dogName.trim() || "your dog";
-  const dogPossessive = answers.dogName.trim() ? `${answers.dogName.trim()}'s` : "your dog's";
+  const multi = answers.multiDog;
+  const dog = answers.dogName.trim() || (multi ? "your dogs" : "your dog");
+  const dogPossessive = dog.endsWith("s") ? `${dog}'` : `${dog}'s`;
 
   // Swipeable product gallery — the live PDP's carousel (product story + real
   // before/afters baked in), so the result card and the product page she lands
@@ -37,20 +51,51 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   const etaDate = fmt(56);
   const guaranteeDate = fmt(90);
 
-  // The result page is the CONCLUSION; the sale happens on the product page.
-  // (The native tier/subscribe buy box felt too basic next to the full PDP —
-  // Will's call, 13 Jul 2026.) The click-through carries ad attribution +
-  // _fbp/_fbc plus the quiz_id, so the store can stitch the journey.
-  const goToPdp = () => {
-    track("quiz_pdp_click", { product: rec.hero.name, gut_score: rec.gutScore });
-    try {
-      const u = new URL(withAttribution(rec.hero.pdpUrl));
-      u.searchParams.set("quiz_id", getQuizId());
-      window.open(u.toString(), "_blank", "noopener");
-    } catch {
-      window.open(rec.hero.pdpUrl, "_blank", "noopener");
+  // The sale happens RIGHT HERE: the live PDP buy box (size cards, supply
+  // tiers, Subscribe & Save) is injected below the product card (Will, 23 Sep
+  // 2026 — replaced the PDP click-through). Add-to-cart goes through
+  // commerce.submitCartAdd, so the selling plan actually attaches and the
+  // hidden _quiz_id line-item property stitches the order back to this quiz.
+  const bbSize: BuyBoxSize =
+    answers.size === "large" ? "large" : answers.size === "medium" ? "medium" : "small";
+  const bbRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const host = bbRef.current;
+    if (!host) return;
+    host.innerHTML = buyBoxHtml({ size: bbSize, multiDog: multi });
+    if (!document.querySelector("link[data-gfp-bb-css]")) {
+      const l = document.createElement("link");
+      l.rel = "stylesheet";
+      l.href = "/bb/gfp-buy-box.css";
+      l.setAttribute("data-gfp-bb-css", "");
+      document.head.appendChild(l);
     }
-  };
+    const form = host.querySelector("[data-gfp-bb-form]") as HTMLFormElement | null;
+    const onSubmit = (e: Event) => {
+      e.preventDefault();
+      const variantId = (host.querySelector("[data-gfp-bb-variant-input]") as HTMLInputElement | null)?.value;
+      const planEl = host.querySelector("[data-gfp-bb-plan-input]") as HTMLInputElement | null;
+      const sellingPlanId = planEl && !planEl.disabled && planEl.value ? planEl.value : undefined;
+      if (!variantId) return;
+      track("AddToCart", { content_ids: ["5-strain-probiotic"], content_type: "product", content_name: rec.hero.name, subscription: !!sellingPlanId });
+      track("InitiateCheckout", { content_ids: ["5-strain-probiotic"], content_type: "product", content_name: rec.hero.name, gut_score: rec.gutScore });
+      const params = new URLSearchParams();
+      for (const [k, v] of Object.entries(getAttribution())) params.set(k, v);
+      const qs = params.toString();
+      submitCartAdd({ variantId, quantity: 1, sellingPlanId, returnTo: qs ? `/cart?${qs}` : "/cart" });
+    };
+    form?.addEventListener("submit", onSubmit);
+    const s = document.createElement("script");
+    s.src = "/bb/gfp-buy-box.js";
+    s.async = true;
+    document.body.appendChild(s);
+    return () => {
+      form?.removeEventListener("submit", onSubmit);
+      try { document.body.removeChild(s); } catch { /* noop */ }
+    };
+    // Injected once on mount — the answers behind size/multi never change here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Dedup key shared by the browser Lead (below) and the server-side Lead sent
   // from the quiz-capture edge function, so the CAPI backup can't double-count.
   const leadEventId = `lead_${getQuizId()}`;
@@ -75,6 +120,7 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     energy: answers.energy,
     eats_grass: answers.grass,
     wind: answers.wind,
+    multi_dog: answers.multiDog,
     stool_consistency: answers.stool,
     issue_duration: answers.duration,
     tried_before: answers.tried,
@@ -120,12 +166,12 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     planRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  // Sticky CTA: appears once the main "Start plan" button has scrolled above the fold.
-  const ctaRef = useRef<HTMLButtonElement>(null);
+  // Sticky CTA: appears once the buy box has scrolled above the fold; tapping
+  // it brings her straight back to the plan.
   const [showSticky, setShowSticky] = useState(false);
   useEffect(() => {
     const onScroll = () => {
-      const el = ctaRef.current;
+      const el = bbRef.current;
       if (el) setShowSticky(el.getBoundingClientRect().bottom < 0);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -134,10 +180,17 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   }, []);
 
   return (
-    <div className="min-h-dvh pb-20">
+    <div className="min-h-dvh">
+      {/* The injected buy box CTA uses the theme's push-btn hooks — restyle to the quiz's pill CTA */}
+      <style>{`
+        .gfp-bb-host .gfp-bb__cta.push-btn{display:block;width:100%;border:none;background:transparent;padding:0;cursor:pointer}
+        .gfp-bb-host .push-btn__surface{display:flex;align-items:center;justify-content:center;gap:.4rem;width:100%;background:var(--gfp-bb-accent);color:var(--gfp-bb-accent-contrast);border-radius:999px;padding:1.05rem 2rem;font-family:var(--heading-font-stack);font-weight:700;font-size:1.125rem;line-height:1.15;box-shadow:0 8px 20px rgba(239,56,36,.35)}
+        .gfp-bb-host .push-btn:active .push-btn__surface{transform:scale(.98)}
+      `}</style>
       <header className="container-page flex justify-center py-5"><Logo /></header>
 
-      <main className="container-page">
+      <main>
+       <div className="container-page">
         {/* Diagnosis header */}
         <div className="animate-fade-up text-center">
           <span className="rounded-full bg-brand-red/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-brand-red">
@@ -260,24 +313,34 @@ export function Result({ answers }: { answers: QuizAnswers }) {
           <div className="mt-5 flex items-center gap-4 rounded-2xl border-2 border-brand-sky bg-brand-sky/15 p-5">
             <span className="text-4xl">🛡️</span>
             <p className="text-base leading-snug text-white">
-              <strong className="text-brand-sky">90-day money-back guarantee.</strong> If {dog} sees no difference by {guaranteeDate}, we'll refund every penny. No quibbles.
+              <strong className="text-brand-sky">90-day money-back guarantee.</strong> If {dog} {multi ? "see" : "sees"} no difference by {guaranteeDate}, we'll refund every penny. No quibbles.
             </p>
           </div>
         </section>
+       </div>
 
+       {/* From the plan downward the page goes clean white — the buying zone. */}
+       <div className="mt-8 bg-white">
+        <div className="container-page pb-20 pt-8">
         {/* Recommendation */}
-        <div ref={planRef} className="mt-8 scroll-mt-4 overflow-hidden rounded-3xl bg-white shadow-card">
-          <div className="bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
+        <div ref={planRef} className="scroll-mt-4">
+          <div className="rounded-2xl bg-brand-red px-6 py-3 text-center text-sm font-bold uppercase tracking-wide text-white">
             {dogPossessive} recommended plan
           </div>
           {/* Swipeable product gallery (product shots + a matching real before/after) */}
-          <ProductGallery slides={gallerySlides} />
-          <div className="p-6">
+          <div className="mt-4 overflow-hidden rounded-3xl">
+            <ProductGallery slides={gallerySlides} />
+          </div>
+          <div className="pt-6">
             <h2 className="text-center text-2xl font-extrabold text-brand-ink">{rec.hero.name}</h2>
             <p className="mt-1 text-center font-semibold text-brand-red">{rec.hero.tagline}</p>
             {/* Personalised note — one tidy block instead of a stack of ticks */}
             <div className="mx-auto mt-4 max-w-sm rounded-xl bg-brand-cream p-3 text-center">
-              <p className="text-sm font-semibold text-brand-ink">For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}</p>
+              {multi ? (
+                <p className="text-sm font-semibold text-brand-ink">Dosing for the crew: 1 capsule a day up to 25kg, 2 a day for 25–40kg, 3 a day over 40kg. Sprinkle on everyone's food.</p>
+              ) : (
+                <p className="text-sm font-semibold text-brand-ink">For a {answers.size ?? "medium"} dog like {dog}: {rec.dose}</p>
+              )}
               {personalNote && <p className="mt-1.5 text-xs leading-snug text-brand-ink/65">{personalNote}</p>}
             </div>
             {/* What's inside — scannable chips, not a wall of sentences */}
@@ -292,30 +355,15 @@ export function Result({ answers }: { answers: QuizAnswers }) {
             )}
             {rec.smallDog && (
               <p className="mt-4 rounded-xl bg-brand-sky/20 p-3 text-sm text-brand-ink/80">
-                🐾 Because {dog} is on the smaller side: these are <strong>twist-open sprinkle capsules</strong>. No giant tablet to crush. Just open and mix into food.
+                🐾 Because {dog} {multi ? "are" : "is"} on the smaller side: these are <strong>twist-open sprinkle capsules</strong>. No giant tablet to crush. Just open and mix into food.
               </p>
             )}
-            {/* Conclusion CTA — the sale happens on the full product page */}
-            <div className="mt-6">
-              <button ref={ctaRef} type="button" onClick={goToPdp}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-4 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-                See {dogPossessive} full plan &amp; pricing →
-              </button>
-              <p className="mt-3 flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 text-center text-xs text-brand-ink/50">
-                <span>🛡️ 90-day money-back guarantee</span>
-                <span aria-hidden>·</span>
-                <span>🏷️ Subscribe &amp; Save 30% off first order</span>
-                <span aria-hidden>·</span>
-                <span>🚚 2–3 working days</span>
-              </p>
-            </div>
+            {/* The full PDP buy box — size cards, supply tiers, Subscribe & Save.
+                Filled by the theme's own gfp-buy-box.js; size pre-selected from the quiz. */}
+            <div ref={bbRef} className="gfp-bb-host mt-7" style={bbHostStyle} />
+            <p className="mt-3 text-center text-xs text-brand-ink/50">🚚 Delivered in 2–3 working days · pause, skip or cancel anytime</p>
           </div>
         </div>
-
-        {/* Flexibility reassurance (guarantee lives in the projection above) */}
-        <p className="mt-5 text-center text-sm font-semibold text-brand-ink/60">
-          Subscribe &amp; save · pause or cancel anytime · backed by our 90-day results guarantee
-        </p>
 
         {/* Real-customer photo wall — social proof from actual owners */}
         <section className="mt-12">
@@ -374,15 +422,17 @@ export function Result({ answers }: { answers: QuizAnswers }) {
         <p className="mx-auto mt-10 max-w-md text-center text-sm text-brand-ink/60">
           Not baked. Not dressed up as a treat. Just what actually works.
         </p>
+        </div>
+       </div>
       </main>
 
-      {/* Sticky CTA — follows the user once the main button scrolls away */}
+      {/* Sticky CTA — follows the user once the buy box scrolls away, back to the plan */}
       {showSticky && (
-        <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-brand-cream/95 backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-50 animate-fade-up border-t border-brand-ink/10 bg-white/95 backdrop-blur">
           <div className="container-page py-3">
-            <button type="button" onClick={goToPdp}
+            <button type="button" onClick={jumpToPlan}
               className="flex w-full items-center justify-center gap-2 rounded-full bg-brand-red px-8 py-3.5 text-lg font-bold text-white shadow-cta transition-transform active:scale-[0.98] hover:brightness-105">
-              See {dogPossessive} full plan →
+              Start {dogPossessive} plan ↑
             </button>
           </div>
         </div>

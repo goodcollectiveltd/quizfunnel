@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 
+// Possessive that survives plural / s-ending names ("your dogs'" not "your dogs's").
+const poss = (dog: string) => (dog.endsWith("s") ? `${dog}'` : `${dog}'s`);
+
 const stepsFor = (dog: string) => [
-  `Analysing ${dog}'s symptoms`,
-  `Reading ${dog}'s gut signals`,
-  `Scoring ${dog}'s gut balance`,
+  `Analysing ${poss(dog)} symptoms`,
+  `Reading ${poss(dog)} gut signals`,
+  `Scoring ${poss(dog)} gut balance`,
   `Matching ${dog} to 10,000+ similar dogs`,
-  `Building ${dog}'s personalised plan`,
+  `Building ${poss(dog)} personalised plan`,
 ];
 
 export function Analysing({ dog, onDone }: { dog: string; onDone: () => void }) {
@@ -27,7 +30,7 @@ export function Analysing({ dog, onDone }: { dog: string; onDone: () => void }) 
       <div className="container-page w-full">
         <div className="flex flex-col items-center text-center">
           <Logo />
-          <h1 className="mt-8 text-2xl font-extrabold text-brand-ink">Building {dog}'s gut &amp; skin plan…</h1>
+          <h1 className="mt-8 text-2xl font-extrabold text-brand-ink">Building {poss(dog)} gut &amp; skin plan…</h1>
           <p className="mt-2 text-brand-ink/60">Mapping the answers against the Good for Pets method.</p>
         </div>
         <ul className="mx-auto mt-8 max-w-sm space-y-3">

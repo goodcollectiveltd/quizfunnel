@@ -19,6 +19,7 @@ export type Goal = "paws" | "skin" | "ears" | "tummy" | "scooting" | "tears" | "
 
 export interface QuizAnswers {
   dogName: string;
+  multiDog: boolean; // more than one dog at home — plural copy, size = the biggest, bigger default supply
   size: DogSize | null;
   age: AgeBand | null;
   symptoms: SymptomTag[]; // ALL selected — every one is used to tailor the plan, none ranked above another
@@ -43,6 +44,7 @@ export interface QuizAnswers {
 
 export const emptyAnswers: QuizAnswers = {
   dogName: "",
+  multiDog: false,
   size: null,
   age: null,
   symptoms: [],
@@ -263,7 +265,7 @@ function benefitsFor(a: QuizAnswers): string[] {
 
 export function buildRecommendation(a: QuizAnswers): Recommendation {
   const symptoms = a.symptoms.map(symptomById);
-  const dog = a.dogName.trim() || "your dog";
+  const dog = a.dogName.trim() || (a.multiDog ? "your dogs" : "your dog");
   const score = gutScore(a);
   const signals = signalsFor(a);
   const list = joinNouns(signals.length ? signals : symptoms.map((s) => s.noun));
