@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/Button";
 import { TestimonialCard } from "@/components/ui/TestimonialCard";
 import { StarRating } from "@/components/ui/StarRating";
 import { buildRecommendation, SPEND_LABEL, type QuizAnswers } from "@/lib/recommend";
-import { track, metaBrowserIds, getAttribution } from "@/lib/tracking";
+import { track, getAttribution } from "@/lib/tracking";
 import { subscribeEmail } from "@/lib/subscribe";
-import { saveSubmission, getQuizId } from "@/lib/submissions";
+import { saveSubmission } from "@/lib/submissions";
 import { fetchDonationTotal } from "@/lib/donation";
 import { submitCartAdd, CAPS_PER_DAY } from "@/lib/commerce";
 import { buyBoxHtml, type BuyBoxSize, type CrewInfo } from "@/data/buybox";
@@ -109,12 +109,10 @@ export function Result({ answers }: { answers: QuizAnswers }) {
     // Injected once on mount — the answers behind size/multi never change here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  // Dedup key shared by the browser Lead (below) and the server-side Lead sent
-  // from the quiz-capture edge function, so the CAPI backup can't double-count.
-  const leadEventId = `lead_${getQuizId()}`;
+  // Quiz-complete event (PostHog/GA4 only; never Meta, see lib/tracking.ts).
   useEffect(() => {
-    track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore }, { eventID: leadEventId });
-  }, [answers.symptoms, rec.hero.name, rec.gutScore, leadEventId]);
+    track("Lead", { symptoms: answers.symptoms, product: rec.hero.name, gut_score: rec.gutScore });
+  }, [answers.symptoms, rec.hero.name, rec.gutScore]);
 
   // Everything from the quiz, saved onto the Klaviyo customer profile (incl. dog's name).
   const profile: Record<string, unknown> = {
@@ -149,24 +147,14 @@ export function Result({ answers }: { answers: QuizAnswers }) {
   };
 
   // Capture EVERY completed quiz (email or not) to the results backend, once, on
-  // reaching the result. No-op until the backend is wired; never blocks the page.
-  // The `capi` block asks the backend to also send a server-side Lead to Meta
-  // (dedup'd against the browser Lead via leadEventId) — a resilient backup for
-  // the quiz Lead, which otherwise fires browser-only and is lost to blockers.
+  // reaching the result. Never blocks the page. No `capi` block: the backend must not send
+  // server-side events to the store's Meta pixel (hard rule, lib/tracking.ts).
   const capturedRef = useRef(false);
   useEffect(() => {
     if (capturedRef.current) return;
     capturedRef.current = true;
-    saveSubmission({
-      profile,
-      capi: {
-        event_name: "Lead",
-        event_id: leadEventId,
-        event_source_url: window.location.href,
-        ...metaBrowserIds(),
-      },
-    });
-  }, [profile, leadEventId]);
+    saveSubmission({ profile });
+  }, [profile]);
 
   // Live donation total from the published Google Sheet (null until loaded / if it fails).
   const [donated, setDonated] = useState<string | null>(null);
